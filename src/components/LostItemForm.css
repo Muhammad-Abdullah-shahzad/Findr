@@ -1,0 +1,82 @@
+/* General container */
+body{
+  margin: 0;
+  padding: 0px;
+  box-sizing: border-box;
+}
+.formWrapper{
+  padding: 70px 20px;
+}
+.form-container {
+   
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1)
+}
+
+/* Circular image upload */
+.image-upload-container {
+  position: relative;
+  width: 160px; /* Adjusted size of the circular container */
+  height: 160px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Hide file input */
+.image-upload-input {
+  width: 100%;
+  height: 100%;
+  opacity: 0; /* Hide the actual file input */
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+/* Hover effect on the file input */
+
+.image-preview-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.image-preview-container .image-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Form fields alignment */
+.form-fields {
+  width: 100%;
+}
+
+/* Spacing between fields */
+.MuiTextField-root {
+  margin-bottom: 20px;
+}
+
+/* Button styling */
+.MuiButton-root {
+  margin-top: 20px;
+  padding: 12px;
+}
