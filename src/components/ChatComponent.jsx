@@ -1,8 +1,8 @@
 // src/components/ChatComponent.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, ArrowLeft } from 'lucide-react';
 
-const ChatComponent = ({ conversation, currentUserId, onBack }) => {
+const ChatComponent = ({ otherUser, currentUserId, onBack }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
@@ -11,53 +11,84 @@ const ChatComponent = ({ conversation, currentUserId, onBack }) => {
 
     const API_BASE_URL = 'http://localhost:5000'; // Make sure this matches your backend
 
-    useEffect(() => {
-        if (!conversation?.conversationId || !currentUserId) return;
+    async function fetchMessages() {
+        setLoading(true);
+        setError(null);
+        console.log("ChatComponent: fetchMessages called.", { currentUserId, otherUser });
+        if (!currentUserId || !otherUser?.userid) {
+            console.warn("ChatComponent: Skipping fetchMessages due to missing currentUserId or otherUser.userid");
+            setLoading(false);
+            return;
+        }
 
-        const fetchMessages = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/chat/messages?conversationId=${conversation.conversationId}&uID=${currentUserId}`);
-                if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.message || 'Failed to fetch messages');
-                }
-                const data = await response.json();
-                setMessages(data);
-            } catch (err) {
-                setError(`Error loading messages: ${err.message}`);
-                console.error("Fetch messages error:", err);
-            } finally {
-                setLoading(false);
+        try {
+            console.log(`ChatComponent: Fetching messages for sender ${currentUserId} and receiver ${otherUser.userid}`);
+            const response = await fetch(`${API_BASE_URL}/api/chat/messages?senderId=${currentUserId}&receiverId=${otherUser.userid}`);
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.message || 'Failed to fetch messages');
             }
-        };
+            const data = await response.json();
+            console.log("ChatComponent: Fetched messages data:", data);
+            setMessages(data);
+            console.log("ChatComponent: Messages state after fetch:", data); // Log the new state directly
+        } catch (err) {
+            setError(`Error loading messages: ${err.message}`);
+            console.error("ChatComponent: Fetch messages error:", err);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        console.log("ChatComponent useEffect (mount/props change):", { currentUserId, otherUser });
+        // Ensure both users are defined before attempting to fetch messages
+        if (!currentUserId || !otherUser?.userid) {
+            console.log("ChatComponent useEffect: Missing currentUserId or otherUser.userid, cannot fetch messages.", { currentUserId, otherUser });
+            setLoading(false);
+            return;
+        }
+
+        console.log("ChatComponent useEffect: Initial fetch and setting up polling for", { currentUserId, otherUser });
 
         fetchMessages();
 
         // Polling for new messages (adjust interval as needed)
-        const pollingInterval = setInterval(fetchMessages, 5000); // Poll every 5 seconds
-        return () => clearInterval(pollingInterval);
+        const pollingInterval = setInterval(() => {
+            console.log("ChatComponent: Polling for new messages...");
+            fetchMessages();
+        }, 5000); // Poll every 5 seconds
 
-    }, [conversation, currentUserId]); // Re-fetch when conversation or user changes
+        return () => {
+            console.log("ChatComponent useEffect cleanup: Clearing polling interval.");
+            clearInterval(pollingInterval);
+        };
+
+    }, [currentUserId, otherUser]); // otherUser includes userid, firstName, lastName
 
     useEffect(() => {
+        console.log("ChatComponent useEffect (messages update): Messages updated, attempting to scroll to bottom.", messages);
         // Scroll to the bottom of the chat when messages update
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
-        if (!newMessage.trim() || !conversation?.conversationId || !currentUserId) return;
+        if (!newMessage.trim() || !currentUserId || !otherUser?.userid) {
+            console.warn("ChatComponent: Skipping sendMessage due to empty message or missing user IDs.", { newMessage, currentUserId, otherUser });
+            return;
+        }
+
+        console.log("ChatComponent: Attempting to send message:", { senderId: currentUserId, receiverId: otherUser.userid, messageText: newMessage });
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/chat/send`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    conversationId: conversation.conversationId,
                     senderId: currentUserId,
-                    message: newMessage,
+                    receiverId: otherUser.userid, // The user you are sending the message to
+                    messageText: newMessage,
                 }),
             });
 
@@ -66,30 +97,40 @@ const ChatComponent = ({ conversation, currentUserId, onBack }) => {
                 throw new Error(errData.message || 'Failed to send message');
             }
 
-            // Optimistically update UI
+            console.log("ChatComponent: Message sent successfully to backend. Optimistically updating UI.");
+            // Optimistically update UI with the new message
             const sentMessage = {
-                id: Date.now(), // Temp ID for UI
+                messageId: Date.now(), // Temp ID for UI, actual ID from DB will be fetched shortly
                 senderId: currentUserId,
-                firstName: conversation.user1Id === currentUserId ? conversation.user1FirstName : conversation.user2FirstName,
-                lastName: conversation.user1Id === currentUserId ? conversation.user1LastName : conversation.user2LastName,
-                message: newMessage,
-                createdAt: new Date().toISOString(),
+                receiverId: otherUser.userid,
+                messageText: newMessage,
+                sentAt: new Date().toISOString(),
             };
-            setMessages(prevMessages => [...prevMessages, sentMessage]);
+            setMessages(prevMessages => {
+                console.log("ChatComponent: Previous messages state (optimistic update):", prevMessages);
+                const newState = [...prevMessages, sentMessage];
+                console.log("ChatComponent: New messages state (optimistic update):", newState);
+                return newState;
+            });
             setNewMessage('');
+
+            // After sending, immediately re-fetch to get the confirmed message from DB, including its real ID
+            // This helps with persistence on refresh and ensures receiver gets updates.
+            console.log("ChatComponent: Triggering immediate fetchMessages after send.");
+            fetchMessages();
 
         } catch (err) {
             setError(`Error sending message: ${err.message}`);
-            console.error("Send message error:", err);
+            console.error("ChatComponent: Send message error:", err);
             // Optionally, show a toast or alert to the user
         }
     };
 
     const getSenderName = (senderId) => {
         if (senderId === currentUserId) return "You";
-        if (senderId === conversation.user1Id) return `${conversation.user1FirstName} ${conversation.user1LastName}`;
-        if (senderId === conversation.user2Id) return `${conversation.user2FirstName} ${conversation.user2LastName}`;
-        return "Unknown User";
+        // Assuming otherUser prop has firstName and lastName
+        if (senderId === otherUser?.userid) return `${otherUser.firstName} ${otherUser.lastName}`;
+        return "Unknown User"; // Should not happen if logic is correct
     };
 
     // Style definitions (replicated from UserDashboard/AdminDashboard for consistency)
@@ -248,66 +289,54 @@ const ChatComponent = ({ conversation, currentUserId, onBack }) => {
 
     if (loading) {
         return (
-            <div style={chatStyles.loadingSpinner}>
-                <span className="spinner" style={{ marginRight: '0.5rem', border: '4px solid rgba(0, 0, 0, 0.1)', borderTop: '4px solid #4F46E5', borderRadius: '50%', width: '30px', height: '30px', animation: 'spin 1s linear infinite' }}></span>
-                Loading chat...
-                <style jsx>{`
-                    @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                `}</style>
-            </div>
+            <div style={chatStyles.loadingSpinner}>Loading messages...</div>
         );
     }
 
     if (error) {
-        return <div style={{ ...chatStyles.noDataMessage, color: '#ef4444' }}>{error}</div>;
+        return (
+            <div style={{ ...chatStyles.noDataMessage, color: 'red' }}>Error: {error}</div>
+        );
     }
-
-    if (!conversation) {
-        return <div style={chatStyles.noDataMessage}>No chat selected.</div>;
-    }
-
-    const otherParticipantName =
-        conversation.user1Id === currentUserId
-            ? `${conversation.user2FirstName} ${conversation.user2LastName}`
-            : `${conversation.user1FirstName} ${conversation.user1LastName}`;
 
     return (
         <div style={chatStyles.container}>
             <div style={chatStyles.header}>
                 <button onClick={onBack} style={chatStyles.backButton}>
-                    <ArrowLeft size={20} /> Back to Chats
+                    <ArrowLeft size={20} /> Back
                 </button>
-                <h3 style={chatStyles.headerTitle}>Chat with {otherParticipantName}</h3>
+                <h2 style={chatStyles.headerTitle}>Chat with {otherUser ? `${otherUser.firstName} ${otherUser.lastName}` : '...'}</h2>
             </div>
-
             <div style={chatStyles.messagesContainer}>
-                {messages.length === 0 ? (
-                    <p style={chatStyles.noDataMessage}>No messages yet. Start the conversation!</p>
-                ) : (
-                    messages.map((msg) => (
-                        <div
-                            key={msg.id}
-                            style={{
-                                ...chatStyles.messageBubble,
-                                ...(msg.senderId === currentUserId ? chatStyles.myMessage : chatStyles.otherMessage),
-                            }}
-                        >
-                            <div style={chatStyles.messageSender}>
-                                {getSenderName(msg.senderId)}
-                            </div>
-                            <div>{msg.message}</div>
-                            <div style={chatStyles.messageTime}>
-                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                        </div>
-                    ))
+                {messages.length === 0 && (
+                    <div style={chatStyles.noDataMessage}>No messages yet. Start the conversation!</div>
                 )}
-                <div ref={messagesEndRef} /> {/* Scroll target */}
+                {messages.map((msg) => (
+                    <div
+                        key={msg.messageId}
+                        style={{
+                            ...chatStyles.messageBubble,
+                            ...(msg.senderId === currentUserId ? chatStyles.myMessage : chatStyles.otherMessage),
+                        }}
+                    >
+                        <div style={chatStyles.messageSender}>
+                            {getSenderName(msg.senderId)}
+                        </div>
+                        <div>{msg.messageText}</div>
+                        {msg.attachmentURL && (
+                            <div style={{ marginTop: '0.5rem' }}>
+                                <a href={msg.attachmentURL} target="_blank" rel="noopener noreferrer" style={{ color: 'white', textDecoration: 'underline' }}>
+                                    View Attachment
+                                </a>
+                            </div>
+                        )}
+                        <div style={chatStyles.messageTime}>
+                            {new Date(msg.sentAt).toLocaleString()}
+                        </div>
+                    </div>
+                ))}
+                <div ref={messagesEndRef} />
             </div>
-
             <form onSubmit={handleSendMessage} style={chatStyles.inputContainer}>
                 <input
                     type="text"
@@ -317,7 +346,7 @@ const ChatComponent = ({ conversation, currentUserId, onBack }) => {
                     style={chatStyles.messageInput}
                 />
                 <button type="submit" style={chatStyles.sendButton} disabled={!newMessage.trim()}>
-                    <Send size={18} /> Send
+                    <Send size={20} /> Send
                 </button>
             </form>
         </div>

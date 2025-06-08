@@ -991,11 +991,16 @@ else  if (req.method === 'POST' && url.pathname === '/signup') {
                   FI.itemName AS foundItemName,
                   FI.description AS foundItemDescription,
                   FI.location AS foundItemLocation,
-                  FI.createdAt AS foundItemDate
+                  FI.createdAt AS foundItemDate,
+                  U.userid AS finderId,
+                  U.firstName AS finderFirstName,
+                  U.lastName AS finderLastName
               FROM
                   ClaimRequests CR
               JOIN
                   FoundItems FI ON CR.foundItemId = FI.id
+              JOIN
+                  Users U ON FI.userID = U.userid -- Join to get finder's details
               WHERE
                   CR.claimantId = ${userId}
               ORDER BY
@@ -1488,7 +1493,114 @@ else if (req.method === 'POST' && url.pathname.startsWith('/api/admin/claims/'))
   }
 }
 
-// ... (Your other routes)
+// --- NEW: Chat Message Sending Route ---
+else if (req.method === 'POST' && url.pathname === '/api/chat/send') {
+    try {
+        const body = await parseJSONBody(req);
+        const { senderId, receiverId, messageText, attachmentURL } = body;
+
+        if (!senderId || !receiverId || !messageText) {
+            sendJSON(res, 400, { message: 'Sender ID, Receiver ID, and message text are required.' });
+            return;
+        }
+
+        await connectDB(); // Ensure DB connection
+
+        await sql.query`
+            INSERT INTO ChatMessages (senderId, receiverId, messageText, attachmentURL)
+            VALUES (${senderId}, ${receiverId}, ${messageText}, ${attachmentURL || null});
+        `;
+
+        // Optionally, you might want to use socket.io here to instantly send the message to the receiver
+        // For now, we'll just confirm successful storage to the sender.
+
+        sendJSON(res, 201, { message: 'Message sent successfully.' });
+
+    } catch (error) {
+        console.error('Error sending chat message:', error);
+        sendJSON(res, 500, { message: 'Server error sending message.' });
+    }
+}
+
+// --- NEW: Chat Message Retrieval Route ---
+else if (req.method === 'GET' && url.pathname === '/api/chat/messages') {
+    try {
+        const senderId = parseInt(url.query.senderId);
+        const receiverId = parseInt(url.query.receiverId);
+
+        if (isNaN(senderId) || isNaN(receiverId)) {
+            sendJSON(res, 400, { message: 'Sender ID and Receiver ID are required and must be numbers.' });
+            return;
+        }
+
+        await connectDB(); // Ensure DB connection
+
+        // Fetch messages where sender is senderId and receiver is receiverId,
+        // OR where sender is receiverId and receiver is senderId (to get full conversation)
+        const result = await sql.query`
+            SELECT
+                messageId,
+                senderId,
+                receiverId,
+                messageText,
+                attachmentURL,
+                isDelivered,
+                isRead,
+                sentAt
+            FROM ChatMessages
+            WHERE
+                (senderId = ${senderId} AND receiverId = ${receiverId})
+                OR
+                (senderId = ${receiverId} AND receiverId = ${senderId})
+            ORDER BY sentAt ASC;
+        `;
+
+        sendJSON(res, 200, result.recordset);
+
+    } catch (error) {
+        console.error('Error fetching chat messages:', error);
+        sendJSON(res, 500, { message: 'Server error fetching messages.' });
+    }
+}
+
+// --- NEW: Get All Conversations for a User ---
+else if (req.method === 'GET' && url.pathname === '/api/chat/conversations') {
+    try {
+        const userId = parseInt(url.query.userId);
+
+        if (isNaN(userId)) {
+            sendJSON(res, 400, { message: 'User ID is required and must be a number.' });
+            return;
+        }
+
+        await connectDB(); // Ensure DB connection
+
+        // Get distinct users the current user has chatted with, and their names
+        const result = await sql.query`
+            SELECT DISTINCT
+                CASE
+                    WHEN senderId = ${userId} THEN receiverId
+                    WHEN receiverId = ${userId} THEN senderId
+                END AS otherUserId,
+                U.firstName, -- Join to get first name of the other user
+                U.lastName -- Join to get last name of the other user
+            FROM ChatMessages CM
+            JOIN Users U ON
+                (CASE
+                    WHEN CM.senderId = ${userId} THEN CM.receiverId
+                    WHEN CM.receiverId = ${userId} THEN CM.senderId
+                END) = U.userid
+            WHERE CM.senderId = ${userId} OR CM.receiverId = ${userId};
+        `;
+
+        sendJSON(res, 200, result.recordset);
+
+    } catch (error) {
+        console.error('Error fetching chat conversations:', error);
+        sendJSON(res, 500, { message: 'Server error fetching conversations.' });
+    }
+}
+
   else {
     
   }

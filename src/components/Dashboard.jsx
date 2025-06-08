@@ -17,8 +17,11 @@ import {
     LayoutDashboard, // For the main dashboard overview
     User, // For profile
     LifeBuoy, // For help & support
-    GitCompare // For match results
+    GitCompare, // For match results
+    MessageSquare, // For chat
+    ArrowRight
 } from 'lucide-react';
+import ChatComponent from './ChatComponent'; // Import the ChatComponent
 
 const UserDashboard = () => {
     const [lostItems, setLostItems] = useState([]);
@@ -31,6 +34,11 @@ const UserDashboard = () => {
     const [activeSection, setActiveSection] = useState('dashboard');
     const [matchResults, setMatchResults] = useState([]);
     const [fetchingMatches, setFetchingMatches] = useState(false);
+    const [showChat, setShowChat] = useState(false); // New state for showing chat
+    const [chatWithUser, setChatWithUser] = useState(null); // New state to store chat recipient's data
+    const [conversations, setConversations] = useState([]); // New state for list of conversations
+
+    const API_BASE_URL = 'http://localhost:5000'; // Define API base URL here
 
     const styles = {
         container: {
@@ -474,19 +482,26 @@ const UserDashboard = () => {
     };
 
     useEffect(() => {
-        const storedUserId = parseInt(localStorage.getItem('uID'));
+        const storedUserId = localStorage.getItem('uID');
         if (storedUserId) {
-            setCurrentUserId(storedUserId);
+            const parsedUserId = parseInt(storedUserId, 10);
+            setCurrentUserId(parsedUserId);
+            console.log("Dashboard: currentUserId set to", parsedUserId);
         } else {
             setError("User ID not found in localStorage. Please log in.");
             setLoading(false);
+            console.error("Dashboard: User ID not found in localStorage.");
         }
     }, []);
 
     const fetchNotifications = async (userId) => {
-        if (!userId) return;
+        if (!userId) {
+            console.log("fetchNotifications: userId is null or undefined, skipping fetch.");
+            return;
+        }
 
         try {
+            console.log(`fetchNotifications: Attempting to fetch notifications for user ${userId}`);
             const response = await fetch(`http://localhost:5000/api/notifications?uID=${userId}`);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
@@ -495,8 +510,9 @@ const UserDashboard = () => {
             const data = await response.json();
             const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             setNotifications(sortedData);
+            console.log("fetchNotifications: Notifications fetched successfully:", sortedData);
         } catch (err) {
-            console.error("Error fetching notifications:", err);
+            console.error("fetchNotifications: Error fetching notifications:", err);
         }
     };
 
@@ -504,6 +520,7 @@ const UserDashboard = () => {
         if (!currentUserId || isNaN(notificationId)) return;
 
         try {
+            console.log(`markNotificationAsRead: Marking notification ${notificationId} as read for user ${currentUserId}`);
             const response = await fetch(`http://localhost:5000/api/notifications/${notificationId}?uID=${currentUserId}`, {
                 method: 'PUT',
                 headers: {
@@ -517,13 +534,14 @@ const UserDashboard = () => {
             }
 
             setNotifications(prevNotifications => {
-                return prevNotifications.map(n =>
+                const updatedNotifications = prevNotifications.map(n =>
                     n.id === notificationId ? { ...n, isRead: true } : n
                 ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                console.log(`markNotificationAsRead: Notification ${notificationId} marked as read. New state:`, updatedNotifications);
+                return updatedNotifications;
             });
-            console.log(`Notification ${notificationId} marked as read. Frontend state update attempted.`);
         } catch (err) {
-            console.error("Failed to mark notification as read:", err);
+            console.error("markNotificationAsRead: Failed to mark notification as read:", err);
         }
     };
 
@@ -531,6 +549,7 @@ const UserDashboard = () => {
         setFetchingMatches(true);
         setMatchResults([]); // Clear previous results
         try {
+            console.log(`fetchMatchResults: Fetching match results for lost item ${lostItemId}`);
             const response = await fetch(`http://localhost:5000/api/matches/best-match?lostItemId=${lostItemId}`);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
@@ -539,49 +558,105 @@ const UserDashboard = () => {
             const data = await response.json();
             setMatchResults(data.matches);
             setActiveSection('matchResults'); // Switch to match results section
+            console.log("fetchMatchResults: Match results fetched successfully:", data.matches);
         } catch (err) {
-            console.error("Failed to fetch match results:", err);
+            console.error("fetchMatchResults: Failed to fetch match results:", err);
             setError(`Failed to load match results: ${err.message}`);
         } finally {
             setFetchingMatches(false);
         }
     };
 
-    useEffect(() => {
-        if (!currentUserId) return;
-
-        const fetchDashboardDataAndNotifications = async () => {
-            setLoading(true);
-            try {
-                const dashboardResponse = await fetch(`http://localhost:5000/user/dashboard?userId=${currentUserId}`);
-                if (!dashboardResponse.ok) {
-                    const errorData = await dashboardResponse.json().catch(() => ({ message: 'Unknown server error' }));
-                    throw new Error(`HTTP error! Status: ${dashboardResponse.status} - ${errorData.message}`);
-                }
-                const dashboardData = await dashboardResponse.json();
-                setLostItems(dashboardData.myLostItems);
-                setFoundItems(dashboardData.myFoundItems);
-                setClaimRequests(dashboardData.myClaimRequests);
-
-                await fetchNotifications(currentUserId);
-
-            } catch (err) {
-                console.error("Failed to fetch dashboard data or initial notifications:", err);
-                setError(`Failed to load dashboard data: ${err.message}`);
-            } finally {
-                setLoading(false);
+    const fetchDashboardDataAndNotifications = async () => {
+        if (!currentUserId) {
+            console.log("fetchDashboardDataAndNotifications: currentUserId is null or undefined, skipping fetch.");
+            return;
+        }
+        setLoading(true);
+        try {
+            console.log(`fetchDashboardDataAndNotifications: Fetching dashboard data for user ${currentUserId}`);
+            const dashboardResponse = await fetch(`http://localhost:5000/user/dashboard?userId=${currentUserId}`);
+            if (!dashboardResponse.ok) {
+                const errorData = await dashboardResponse.json().catch(() => ({ message: 'Unknown server error' }));
+                throw new Error(`HTTP error! Status: ${dashboardResponse.status} - ${errorData.message}`);
             }
-        };
+            const dashboardData = await dashboardResponse.json();
+            setLostItems(dashboardData.myLostItems);
+            setFoundItems(dashboardData.myFoundItems);
+            setClaimRequests(dashboardData.myClaimRequests);
 
-        fetchDashboardDataAndNotifications();
+            await fetchNotifications(currentUserId);
+            console.log("fetchDashboardDataAndNotifications: Dashboard data fetched successfully:", dashboardData);
 
-        const pollingInterval = setInterval(() => {
-            fetchNotifications(currentUserId);
-        }, 30000);
+        } catch (err) {
+            console.error("fetchDashboardDataAndNotifications: Failed to fetch dashboard data or initial notifications:", err);
+            setError(`Failed to load dashboard data: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        return () => clearInterval(pollingInterval);
+    const fetchConversations = async () => {
+        if (!currentUserId) {
+            console.log("fetchConversations: currentUserId is null or undefined, skipping fetch.");
+            return;
+        }
+        try {
+            console.log(`fetchConversations: Attempting to fetch conversations for user ${currentUserId}`);
+            const response = await fetch(`${API_BASE_URL}/api/chat/conversations?userId=${currentUserId}`);
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.message || 'Failed to fetch conversations');
+            }
+            const data = await response.json();
+            setConversations(data);
+            console.log("fetchConversations: Conversations fetched successfully:", data);
+        } catch (err) {
+            console.error('fetchConversations: Error fetching conversations:', err);
+            setError(`Error loading conversations: ${err.message}`);
+        }
+    };
+
+    useEffect(() => {
+        if (currentUserId) {
+            console.log("Dashboard main useEffect: currentUserId available, fetching dashboard data and notifications.");
+            fetchDashboardDataAndNotifications();
+
+            const pollingInterval = setInterval(() => {
+                console.log("Dashboard polling for notifications...");
+                fetchNotifications(currentUserId);
+            }, 30000);
+
+            return () => clearInterval(pollingInterval);
+        } else {
+            console.log("Dashboard main useEffect: currentUserId not yet available.");
+        }
 
     }, [currentUserId]);
+
+    useEffect(() => {
+        console.log(`Dashboard chat useEffect: activeSection=${activeSection}, showChat=${showChat}, currentUserId=${currentUserId}`);
+        if (activeSection === 'chat' && !showChat && currentUserId) {
+            console.log("Dashboard chat useEffect: Conditions met, fetching conversations...");
+            fetchConversations();
+            const pollingConversations = setInterval(() => {
+                console.log("Dashboard polling for conversations...");
+                fetchConversations();
+            }, 10000); // Poll for conversations every 10 seconds
+            return () => clearInterval(pollingConversations);
+        } else if (activeSection === 'chat' && showChat) {
+            console.log("Dashboard chat useEffect: Chat component is currently active, skipping conversation list fetch.");
+        } else if (activeSection !== 'chat') {
+            console.log("Dashboard chat useEffect: Not in chat section, skipping conversation list fetch.");
+        }
+    }, [activeSection, showChat, currentUserId]);
+
+    const handleChatInitiate = (user) => {
+        console.log("handleChatInitiate: Initiating chat with user:", user);
+        setChatWithUser(user);
+        setShowChat(true);
+        setActiveSection('chat'); // Automatically switch to chat section
+    };
 
     const getStatusStyle = (status) => {
         if (!status) return {};
@@ -752,353 +827,409 @@ const UserDashboard = () => {
                                 Help & Support
                             </div>
                         </li>
+                        <li>
+                            <div
+                                style={{ ...styles.sidebarNavLink, ...(activeSection === 'chat' ? styles.sidebarNavLinkActive : {}) }}
+                                onClick={() => { setActiveSection('chat'); setShowChat(false); setChatWithUser(null); }}
+                                className="sidebar-link-hoverable"
+                            >
+                                <MessageSquare size={20} style={styles.sidebarNavIcon} />
+                                Chat
+                            </div>
+                        </li>
                     </ul>
                 </aside>
 
                 {/* Main Dashboard Content */}
                 <main style={styles.mainContent}>
-                    {/* Dashboard Overview Section */}
-                    {activeSection === 'dashboard' && (
-                        <>
-                            <div style={styles.header}>
-                                <h1 style={styles.title}>Dashboard Overview</h1>
-                                <p style={styles.subtitle}>Welcome back! Here's an overview of your activity.</p>
-                            </div>
-
-                            {/* Stats Overview Section */}
-                            <div style={styles.statsGrid}>
-                                <div style={{ ...styles.statCard, background: 'linear-gradient(45deg, #1e293b, #334155)' }} className="hover-effect">
-                                    <div style={styles.statCardIcon}>
-                                        <Search size={28} />
-                                    </div>
-                                    <div style={styles.statCardContent}>
-                                        <div style={styles.statCardTitle}>Lost Reports</div>
-                                        <div style={styles.statCardValue}>{lostItems.length}</div>
-                                    </div>
-                                </div>
-                                <div style={{ ...styles.statCard, background: 'linear-gradient(45deg, #4F46E5, #7C3AED)' }} className="hover-effect">
-                                    <div style={styles.statCardIcon}>
-                                        <Box size={28} />
-                                    </div>
-                                    <div style={styles.statCardContent}>
-                                        <div style={styles.statCardTitle}>Found Items</div>
-                                        <div style={styles.statCardValue}>{foundItems.length}</div>
-                                    </div>
-                                </div>
-                                <div style={{ ...styles.statCard, background: 'linear-gradient(45deg, #f97316, #fb923c)' }} className="hover-effect">
-                                    <div style={styles.statCardIcon}>
-                                        <MessageSquareText size={28} />
-                                    </div>
-                                    <div style={styles.statCardContent}>
-                                        <div style={styles.statCardTitle}>Claim Requests</div>
-                                        <div style={styles.statCardValue}>{claimRequests.length}</div>
-                                    </div>
-                                </div>
-                                <div style={{ ...styles.statCard, background: 'linear-gradient(45deg, #22c55e, #4ade80)' }} className="hover-effect">
-                                    <div style={styles.statCardIcon}>
-                                        <BellRing size={28} />
-                                    </div>
-                                    <div style={styles.statCardContent}>
-                                        <div style={styles.statCardTitle}>Unread Notifications</div>
-                                        <div style={styles.statCardValue}>{unreadNotifications.length}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* Notifications section when 'dashboard' is active */}
-                            <div style={styles.notificationBox} className="hover-effect">
-                                <h3 style={styles.notificationHeader}>
-                                    <BellRing size={24} /> Recent Notifications
-                                </h3>
-                                {notifications.length === 0 ? (
-                                    <p style={styles.noDataMessage}>No notifications yet.</p>
+                    {activeSection === 'chat' ? (
+                        showChat && chatWithUser ? (
+                            <ChatComponent
+                                currentUserId={currentUserId}
+                                otherUser={chatWithUser}
+                                onBack={() => setShowChat(false)} // Go back to chat list
+                            />
+                        ) : (
+                            <div>
+                                <h2 style={styles.sectionTitle}><MessageSquare size={28} /> My Conversations</h2>
+                                {conversations.length === 0 ? (
+                                    <div style={styles.noDataMessage}>No active conversations. Start a chat from an approved claim request!</div>
                                 ) : (
                                     <ul style={styles.list}>
-                                        {unreadNotifications.slice(0, 5).map(note => (
+                                        {conversations.map((conversation) => (
                                             <li
-                                                key={note.id}
-                                                style={styles.notificationItem}
+                                                key={conversation.otherUserId}
+                                                style={{ ...styles.listItem, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                                                 className="hover-effect"
+                                                onClick={() => handleChatInitiate({ userid: conversation.otherUserId, firstName: conversation.firstName, lastName: conversation.lastName })}
                                             >
                                                 <div>
-                                                    <strong>New:</strong> {note.message}
-                                                    {note.senderFirstName && note.senderLastName && (
-                                                        <span style={{ fontSize: '0.9em', marginLeft: '5px', fontStyle: 'italic', color: '#94a3b8' }}>
-                                                            (from {note.senderFirstName} {note.senderLastName})
-                                                        </span>
-                                                    )}
-                                                    <div style={styles.notificationTimestamp}>
-                                                        {new Date(note.createdAt).toLocaleString()}
+                                                    <strong>{conversation.firstName} {conversation.lastName}</strong>
+                                                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.2rem' }}>
+                                                        User ID: {conversation.otherUserId}
                                                     </div>
                                                 </div>
-                                                <button
-                                                    style={styles.markAsReadButton}
-                                                    onClick={() => markNotificationAsRead(note.id)}
-                                                    className="mark-as-read-btn-hoverable"
-                                                >
-                                                    Mark as Read
-                                                </button>
+                                                <ArrowRight size={20} color="#4F46E5" />
                                             </li>
                                         ))}
-                                        {readNotifications.slice(0, 5).map(note => (
-                                            <li
-                                                key={note.id}
-                                                style={{ ...styles.notificationItem, ...styles.readNotificationItem }}
-                                                className="read-notification-item-hover-override"
-                                            >
-                                                <div>
-                                                    {note.message}
-                                                    {note.senderFirstName && note.senderLastName && (
-                                                        <span style={{ fontSize: '0.9em', marginLeft: '5px', fontStyle: 'italic', color: '#94a3b8' }}>
-                                                            (from {note.senderFirstName} {note.lastName})
-                                                        </span>
-                                                    )}
-                                                    <div style={styles.notificationTimestamp}>
-                                                        {new Date(note.createdAt).toLocaleString()} (Read)
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    style={{ ...styles.markAsReadButton, ...styles.markAsReadButtonRead }}
-                                                    disabled
-                                                    className="mark-as-read-btn-disabled-hover-override"
-                                                >
-                                                    Read
-                                                </button>
-                                            </li>
-                                        ))}
-                                        {notifications.length > 10 && (
-                                            <p style={{ ...styles.infoText, textAlign: 'center', marginTop: '1rem' }}>
-                                                <a href="#" onClick={() => setActiveSection('notifications')} style={{ color: '#4F46E5', textDecoration: 'none', fontWeight: '600' }}>
-                                                    View All Notifications
-                                                </a>
-                                            </p>
-                                        )}
                                     </ul>
                                 )}
                             </div>
+                        )
+                    ) : (
+                        <>
+                            {/* Dashboard Overview Section */}
+                            {activeSection === 'dashboard' && (
+                                <>
+                                    <div style={styles.header}>
+                                        <h1 style={styles.title}>Dashboard Overview</h1>
+                                        <p style={styles.subtitle}>Welcome back! Here's an overview of your activity.</p>
+                                    </div>
+
+                                    {/* Stats Overview Section */}
+                                    <div style={styles.statsGrid}>
+                                        <div style={{ ...styles.statCard, background: 'linear-gradient(45deg, #1e293b, #334155)' }} className="hover-effect">
+                                            <div style={styles.statCardIcon}>
+                                                <Search size={28} />
+                                            </div>
+                                            <div style={styles.statCardContent}>
+                                                <div style={styles.statCardTitle}>Lost Reports</div>
+                                                <div style={styles.statCardValue}>{lostItems.length}</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ ...styles.statCard, background: 'linear-gradient(45deg, #4F46E5, #7C3AED)' }} className="hover-effect">
+                                            <div style={styles.statCardIcon}>
+                                                <Box size={28} />
+                                            </div>
+                                            <div style={styles.statCardContent}>
+                                                <div style={styles.statCardTitle}>Found Items</div>
+                                                <div style={styles.statCardValue}>{foundItems.length}</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ ...styles.statCard, background: 'linear-gradient(45deg, #f97316, #fb923c)' }} className="hover-effect">
+                                            <div style={styles.statCardIcon}>
+                                                <MessageSquareText size={28} />
+                                            </div>
+                                            <div style={styles.statCardContent}>
+                                                <div style={styles.statCardTitle}>Claim Requests</div>
+                                                <div style={styles.statCardValue}>{claimRequests.length}</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ ...styles.statCard, background: 'linear-gradient(45deg, #22c55e, #4ade80)' }} className="hover-effect">
+                                            <div style={styles.statCardIcon}>
+                                                <BellRing size={28} />
+                                            </div>
+                                            <div style={styles.statCardContent}>
+                                                <div style={styles.statCardTitle}>Unread Notifications</div>
+                                                <div style={styles.statCardValue}>{unreadNotifications.length}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {/* Notifications section when 'dashboard' is active */}
+                                    <div style={styles.notificationBox} className="hover-effect">
+                                        <h3 style={styles.notificationHeader}>
+                                            <BellRing size={24} /> Recent Notifications
+                                        </h3>
+                                        {notifications.length === 0 ? (
+                                            <p style={styles.noDataMessage}>No notifications yet.</p>
+                                        ) : (
+                                            <ul style={styles.list}>
+                                                {unreadNotifications.slice(0, 5).map(note => (
+                                                    <li
+                                                        key={note.id}
+                                                        style={styles.notificationItem}
+                                                        className="hover-effect"
+                                                    >
+                                                        <div>
+                                                            <strong>New:</strong> {note.message}
+                                                            {note.senderFirstName && note.senderLastName && (
+                                                                <span style={{ fontSize: '0.9em', marginLeft: '5px', fontStyle: 'italic', color: '#94a3b8' }}>
+                                                                    (from {note.senderFirstName} {note.senderLastName})
+                                                                </span>
+                                                            )}
+                                                            <div style={styles.notificationTimestamp}>
+                                                                {new Date(note.createdAt).toLocaleString()}
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            style={styles.markAsReadButton}
+                                                            onClick={() => markNotificationAsRead(note.id)}
+                                                            className="mark-as-read-btn-hoverable"
+                                                        >
+                                                            Mark as Read
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                                {readNotifications.slice(0, 5).map(note => (
+                                                    <li
+                                                        key={note.id}
+                                                        style={{ ...styles.notificationItem, ...styles.readNotificationItem }}
+                                                        className="read-notification-item-hover-override"
+                                                    >
+                                                        <div>
+                                                            {note.message}
+                                                            {note.senderFirstName && note.senderLastName && (
+                                                                <span style={{ fontSize: '0.9em', marginLeft: '5px', fontStyle: 'italic', color: '#94a3b8' }}>
+                                                                    (from {note.senderFirstName} {note.lastName})
+                                                                </span>
+                                                            )}
+                                                            <div style={styles.notificationTimestamp}>
+                                                                {new Date(note.createdAt).toLocaleString()} (Read)
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            style={{ ...styles.markAsReadButton, ...styles.markAsReadButtonRead }}
+                                                            disabled
+                                                            className="mark-as-read-btn-disabled-hover-override"
+                                                        >
+                                                            Read
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                                {notifications.length > 10 && (
+                                                    <p style={{ ...styles.infoText, textAlign: 'center', marginTop: '1rem' }}>
+                                                        <a href="#" onClick={() => setActiveSection('notifications')} style={{ color: '#4F46E5', textDecoration: 'none', fontWeight: '600' }}>
+                                                            View All Notifications
+                                                        </a>
+                                                    </p>
+                                                )}
+                                            </ul>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+
+                            {/* My Lost Items Section */}
+                            {activeSection === 'myLostItems' && (
+                                <section style={styles.card}>
+                                    <h2 style={styles.sectionTitle}>
+                                        <Search size={24} /> My Lost Items
+                                    </h2>
+                                    {lostItems.length === 0 ? (
+                                        <p style={styles.noDataMessage}>You haven't posted any lost items yet.</p>
+                                    ) : (
+                                        <ul style={styles.list}>
+                                            {lostItems.map(item => (
+                                                <li
+                                                    key={item.id}
+                                                    style={styles.listItem}
+                                                    className="hover-effect"
+                                                >
+                                                    <strong style={styles.listItemStrong}>{item.itemName}</strong>
+                                                    <span style={styles.infoText}>Description: {item.description}</span>
+                                                    <span style={styles.infoText}>Posted on: {new Date(item.createdAt).toLocaleDateString()}</span>
+                                                    {item.location && <span style={styles.infoText}>Location: {item.location}</span>}
+                                                    {item.contactInfo && <span style={styles.infoText}>Contact: {item.contactInfo}</span>}
+                                                    {item.status && <span style={styles.infoText}>Status: <span style={getStatusStyle(item.status)}>{item.status.toUpperCase()}</span></span>}
+                                                    <button
+                                                        style={styles.findMatchButton}
+                                                        onClick={() => fetchMatchResults(item.id)}
+                                                        disabled={fetchingMatches}
+                                                    >
+                                                        {fetchingMatches ? 'Finding Matches...' : 'Find Match'}
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </section>
+                            )}
+
+                            {/* My Found Items Section */}
+                            {activeSection === 'myFoundItems' && (
+                                <section style={styles.card}>
+                                    <h2 style={styles.sectionTitle}>
+                                        <Box size={24} /> My Found Items
+                                    </h2>
+                                    {foundItems.length === 0 ? (
+                                        <p style={styles.noDataMessage}>You haven't posted any found items yet.</p>
+                                    ) : (
+                                        <ul style={styles.list}>
+                                            {foundItems.map(item => (
+                                                <li
+                                                    key={item.id}
+                                                    style={styles.listItem}
+                                                    className="hover-effect"
+                                                >
+                                                    <strong style={styles.listItemStrong}>{item.itemName}</strong>
+                                                    <span style={styles.infoText}>Description: {item.description}</span>
+                                                    <span style={styles.infoText}>Posted on: {new Date(item.createdAt).toLocaleDateString()}</span>
+                                                    {item.location && <span style={styles.infoText}>Location: {item.location}</span>}
+                                                    {item.contactInfo && <span style={styles.infoText}>Contact: {item.contactInfo}</span>}
+                                                    {item.status && <span style={styles.infoText}>Status: <span style={getStatusStyle(item.status)}>{item.status.toUpperCase()}</span></span>}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </section>
+                            )}
+
+                            {/* My Claim Requests Section */}
+                            {activeSection === 'claimRequests' && (
+                                <section style={styles.card}>
+                                    <h2 style={styles.sectionTitle}>
+                                        <MessageSquareText size={24} /> My Claim Requests
+                                    </h2>
+                                    {claimRequests.length === 0 ? (
+                                        <p style={styles.noDataMessage}>You haven't made any claim requests yet.</p>
+                                    ) : (
+                                        <ul style={styles.list}>
+                                            {claimRequests.map(request => (
+                                                <li
+                                                    key={request.claimId}
+                                                    style={styles.listItem}
+                                                    className="hover-effect"
+                                                >
+                                                    <span style={styles.infoText}>Request for: <strong style={styles.listItemStrong}>{request.foundItemName}</strong> (ID: {request.foundItemId})</span>
+                                                    <span style={styles.infoText}>Description: {request.foundItemDescription}</span>
+                                                    <span style={styles.infoText}>Location: {request.foundItemLocation}</span>
+                                                    <span style={styles.infoText}>Your Message: "{request.claimMessage}"</span>
+                                                    <span style={styles.infoText}>Status: <span style={getStatusStyle(request.claimStatus)}>{request.claimStatus.toUpperCase()}</span></span>
+                                                    <span style={styles.infoText}>Requested On: {new Date(request.claimCreatedAt).toLocaleString()}</span>
+                                                    {request.claimStatus.toLowerCase() === 'approved' && (
+                                                        <button
+                                                            style={{...styles.findMatchButton, marginTop: '1rem'}} // Reusing styling, adjust as needed
+                                                            onClick={() => handleChatInitiate({ userid: request.finderId, firstName: request.finderFirstName, lastName: request.finderLastName })}
+                                                        >
+                                                            Chat with Finder
+                                                        </button>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </section>
+                            )}
+
+                            {/* Notifications Section (shown only when 'notifications' is active) */}
+                            {activeSection === 'notifications' && (
+                                <div style={styles.notificationBox} className="hover-effect">
+                                    <h3 style={styles.notificationHeader}>
+                                        <BellRing size={24} /> All Notifications
+                                    </h3>
+                                    {notifications.length === 0 ? (
+                                        <p style={styles.noDataMessage}>No notifications yet.</p>
+                                    ) : (
+                                        <ul style={styles.list}>
+                                            {unreadNotifications.map(note => (
+                                                <li
+                                                    key={note.id}
+                                                    style={styles.notificationItem}
+                                                    className="hover-effect"
+                                                >
+                                                    <div>
+                                                        <strong>New:</strong> {note.message}
+                                                        {note.senderFirstName && note.senderLastName && (
+                                                            <span style={{ fontSize: '0.9em', marginLeft: '5px', fontStyle: 'italic', color: '#94a3b8' }}>
+                                                                (from {note.senderFirstName} {note.senderLastName})
+                                                            </span>
+                                                        )}
+                                                        <div style={styles.notificationTimestamp}>
+                                                            {new Date(note.createdAt).toLocaleString()}
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        style={styles.markAsReadButton}
+                                                        onClick={() => markNotificationAsRead(note.id)}
+                                                        className="mark-as-read-btn-hoverable"
+                                                    >
+                                                        Mark as Read
+                                                    </button>
+                                                </li>
+                                            ))}
+                                            {readNotifications.map(note => (
+                                                <li
+                                                    key={note.id}
+                                                    style={{ ...styles.notificationItem, ...styles.readNotificationItem }}
+                                                    className="read-notification-item-hover-override"
+                                                >
+                                                    <div>
+                                                        {note.message}
+                                                        {note.senderFirstName && note.senderLastName && (
+                                                            <span style={{ fontSize: '0.9em', marginLeft: '5px', fontStyle: 'italic', color: '#94a3b8' }}>
+                                                                (from {note.senderFirstName} {note.lastName})
+                                                            </span>
+                                                        )}
+                                                        <div style={styles.notificationTimestamp}>
+                                                            {new Date(note.createdAt).toLocaleString()} (Read)
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        style={{ ...styles.markAsReadButton, ...styles.markAsReadButtonRead }}
+                                                        disabled
+                                                        className="mark-as-read-btn-disabled-hover-override"
+                                                    >
+                                                        Read
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Match Results Section */}
+                            {activeSection === 'matchResults' && (
+                                <section style={styles.card}>
+                                    <h2 style={styles.sectionTitle}>
+                                        <GitCompare size={24} /> Match Results
+                                    </h2>
+                                    {fetchingMatches ? (
+                                        <p style={styles.noDataMessage}>Finding best matches...</p>
+                                    ) : matchResults.length === 0 ? (
+                                        <p style={styles.noDataMessage}>No significant matches found for your lost item.</p>
+                                    ) : (
+                                        <ul style={styles.list}>
+                                            {matchResults.map(match => (
+                                                <li key={match.foundItem.id} style={styles.matchItemContainer} className="hover-effect">
+                                                    <strong style={styles.listItemStrong}>Matched Found Item: {match.foundItem.itemName}</strong>
+                                                    {match.foundItem.image && match.foundItem.image !== "" && (
+                                                        <img
+                                                            src={match.foundItem.image}
+                                                            alt={match.foundItem.itemName}
+                                                            style={styles.foundItemImage}
+                                                        />
+                                                    )}
+                                                    <span style={styles.infoText}>Description: {match.foundItem.description}</span>
+                                                    <span style={styles.infoText}>Location: {match.foundItem.location}</span>
+                                                    <span style={styles.infoText}>Contact Info: {match.foundItem.contactInfo}</span>
+                                                    <span style={styles.infoText}>Found On: {new Date(match.foundItem.createdAt).toLocaleDateString()}</span>
+                                                    <span style={styles.matchScore}>Match Score: {(match.score * 100).toFixed(2)}%</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </section>
+                            )}
+
+                            {/* Profile Section (Placeholder) */}
+                            {activeSection === 'profile' && (
+                                <section style={styles.card}>
+                                    <h2 style={styles.sectionTitle}>
+                                        <User size={24} /> My Profile
+                                    </h2>
+                                    <p style={styles.noDataMessage}>
+                                        This section would display your user profile information.
+                                        (Functionality for profile management goes here.)
+                                    </p>
+                                </section>
+                            )}
+
+                            {/* Help & Support Section (Placeholder) */}
+                            {activeSection === 'helpSupport' && (
+                                <section style={styles.card}>
+                                    <h2 style={styles.sectionTitle}>
+                                        <LifeBuoy size={24} /> Help & Support
+                                    </h2>
+                                    <p style={styles.noDataMessage}>
+                                        Find answers to common questions or contact support here.
+                                        (Functionality for FAQs, contact forms goes here.)
+                                    </p>
+                                </section>
+                            )}
+
                         </>
                     )}
-
-                    {/* My Lost Items Section */}
-                    {activeSection === 'myLostItems' && (
-                        <section style={styles.card}>
-                            <h2 style={styles.sectionTitle}>
-                                <Search size={24} /> My Lost Items
-                            </h2>
-                            {lostItems.length === 0 ? (
-                                <p style={styles.noDataMessage}>You haven't posted any lost items yet.</p>
-                            ) : (
-                                <ul style={styles.list}>
-                                    {lostItems.map(item => (
-                                        <li
-                                            key={item.id}
-                                            style={styles.listItem}
-                                            className="hover-effect"
-                                        >
-                                            <strong style={styles.listItemStrong}>{item.itemName}</strong>
-                                            <span style={styles.infoText}>Description: {item.description}</span>
-                                            <span style={styles.infoText}>Posted on: {new Date(item.createdAt).toLocaleDateString()}</span>
-                                            {item.location && <span style={styles.infoText}>Location: {item.location}</span>}
-                                            {item.contactInfo && <span style={styles.infoText}>Contact: {item.contactInfo}</span>}
-                                            {item.status && <span style={styles.infoText}>Status: <span style={getStatusStyle(item.status)}>{item.status.toUpperCase()}</span></span>}
-                                            <button
-                                                style={styles.findMatchButton}
-                                                onClick={() => fetchMatchResults(item.id)}
-                                                disabled={fetchingMatches}
-                                            >
-                                                {fetchingMatches ? 'Finding Matches...' : 'Find Match'}
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </section>
-                    )}
-
-                    {/* My Found Items Section */}
-                    {activeSection === 'myFoundItems' && (
-                        <section style={styles.card}>
-                            <h2 style={styles.sectionTitle}>
-                                <Box size={24} /> My Found Items
-                            </h2>
-                            {foundItems.length === 0 ? (
-                                <p style={styles.noDataMessage}>You haven't posted any found items yet.</p>
-                            ) : (
-                                <ul style={styles.list}>
-                                    {foundItems.map(item => (
-                                        <li
-                                            key={item.id}
-                                            style={styles.listItem}
-                                            className="hover-effect"
-                                        >
-                                            <strong style={styles.listItemStrong}>{item.itemName}</strong>
-                                            <span style={styles.infoText}>Description: {item.description}</span>
-                                            <span style={styles.infoText}>Posted on: {new Date(item.createdAt).toLocaleDateString()}</span>
-                                            {item.location && <span style={styles.infoText}>Location: {item.location}</span>}
-                                            {item.contactInfo && <span style={styles.infoText}>Contact: {item.contactInfo}</span>}
-                                            {item.status && <span style={styles.infoText}>Status: <span style={getStatusStyle(item.status)}>{item.status.toUpperCase()}</span></span>}
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </section>
-                    )}
-
-                    {/* My Claim Requests Section */}
-                    {activeSection === 'claimRequests' && (
-                        <section style={styles.card}>
-                            <h2 style={styles.sectionTitle}>
-                                <MessageSquareText size={24} /> My Claim Requests
-                            </h2>
-                            {claimRequests.length === 0 ? (
-                                <p style={styles.noDataMessage}>You haven't made any claim requests yet.</p>
-                            ) : (
-                                <ul style={styles.list}>
-                                    {claimRequests.map(request => (
-                                        <li
-                                            key={request.claimId}
-                                            style={styles.listItem}
-                                            className="hover-effect"
-                                        >
-                                            <span style={styles.infoText}>Request for: <strong style={styles.listItemStrong}>{request.foundItemName}</strong> (ID: {request.foundItemId})</span>
-                                            <span style={styles.infoText}>Description: {request.foundItemDescription}</span>
-                                            <span style={styles.infoText}>Location: {request.foundItemLocation}</span>
-                                            <span style={styles.infoText}>Your Message: "{request.claimMessage}"</span>
-                                            <span style={styles.infoText}>Status: <span style={getStatusStyle(request.claimStatus)}>{request.claimStatus.toUpperCase()}</span></span>
-                                            <span style={styles.infoText}>Requested On: {new Date(request.claimCreatedAt).toLocaleString()}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </section>
-                    )}
-
-                    {/* Notifications Section (shown only when 'notifications' is active) */}
-                    {activeSection === 'notifications' && (
-                        <div style={styles.notificationBox} className="hover-effect">
-                            <h3 style={styles.notificationHeader}>
-                                <BellRing size={24} /> All Notifications
-                            </h3>
-                            {notifications.length === 0 ? (
-                                <p style={styles.noDataMessage}>No notifications yet.</p>
-                            ) : (
-                                <ul style={styles.list}>
-                                    {unreadNotifications.map(note => (
-                                        <li
-                                            key={note.id}
-                                            style={styles.notificationItem}
-                                            className="hover-effect"
-                                        >
-                                            <div>
-                                                <strong>New:</strong> {note.message}
-                                                {note.senderFirstName && note.senderLastName && (
-                                                    <span style={{ fontSize: '0.9em', marginLeft: '5px', fontStyle: 'italic', color: '#94a3b8' }}>
-                                                        (from {note.senderFirstName} {note.senderLastName})
-                                                    </span>
-                                                )}
-                                                <div style={styles.notificationTimestamp}>
-                                                    {new Date(note.createdAt).toLocaleString()}
-                                                </div>
-                                            </div>
-                                            <button
-                                                style={styles.markAsReadButton}
-                                                onClick={() => markNotificationAsRead(note.id)}
-                                                className="mark-as-read-btn-hoverable"
-                                            >
-                                                Mark as Read
-                                            </button>
-                                        </li>
-                                    ))}
-                                    {readNotifications.map(note => (
-                                        <li
-                                            key={note.id}
-                                            style={{ ...styles.notificationItem, ...styles.readNotificationItem }}
-                                            className="read-notification-item-hover-override"
-                                        >
-                                            <div>
-                                                {note.message}
-                                                {note.senderFirstName && note.senderLastName && (
-                                                    <span style={{ fontSize: '0.9em', marginLeft: '5px', fontStyle: 'italic', color: '#94a3b8' }}>
-                                                        (from {note.senderFirstName} {note.lastName})
-                                                    </span>
-                                                )}
-                                                <div style={styles.notificationTimestamp}>
-                                                    {new Date(note.createdAt).toLocaleString()} (Read)
-                                                </div>
-                                            </div>
-                                            <button
-                                                style={{ ...styles.markAsReadButton, ...styles.markAsReadButtonRead }}
-                                                disabled
-                                                className="mark-as-read-btn-disabled-hover-override"
-                                            >
-                                                Read
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Match Results Section */}
-                    {activeSection === 'matchResults' && (
-                        <section style={styles.card}>
-                            <h2 style={styles.sectionTitle}>
-                                <GitCompare size={24} /> Match Results
-                            </h2>
-                            {fetchingMatches ? (
-                                <p style={styles.noDataMessage}>Finding best matches...</p>
-                            ) : matchResults.length === 0 ? (
-                                <p style={styles.noDataMessage}>No significant matches found for your lost item.</p>
-                            ) : (
-                                <ul style={styles.list}>
-                                    {matchResults.map(match => (
-                                        <li key={match.foundItem.id} style={styles.matchItemContainer} className="hover-effect">
-                                            <strong style={styles.listItemStrong}>Matched Found Item: {match.foundItem.itemName}</strong>
-                                            {match.foundItem.image && match.foundItem.image !== "" && (
-                                                <img
-                                                    src={match.foundItem.image}
-                                                    alt={match.foundItem.itemName}
-                                                    style={styles.foundItemImage}
-                                                />
-                                            )}
-                                            <span style={styles.infoText}>Description: {match.foundItem.description}</span>
-                                            <span style={styles.infoText}>Location: {match.foundItem.location}</span>
-                                            <span style={styles.infoText}>Contact Info: {match.foundItem.contactInfo}</span>
-                                            <span style={styles.infoText}>Found On: {new Date(match.foundItem.createdAt).toLocaleDateString()}</span>
-                                            <span style={styles.matchScore}>Match Score: {(match.score * 100).toFixed(2)}%</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </section>
-                    )}
-
-                    {/* Profile Section (Placeholder) */}
-                    {activeSection === 'profile' && (
-                        <section style={styles.card}>
-                            <h2 style={styles.sectionTitle}>
-                                <User size={24} /> My Profile
-                            </h2>
-                            <p style={styles.noDataMessage}>
-                                This section would display your user profile information.
-                                (Functionality for profile management goes here.)
-                            </p>
-                        </section>
-                    )}
-
-                    {/* Help & Support Section (Placeholder) */}
-                    {activeSection === 'helpSupport' && (
-                        <section style={styles.card}>
-                            <h2 style={styles.sectionTitle}>
-                                <LifeBuoy size={24} /> Help & Support
-                            </h2>
-                            <p style={styles.noDataMessage}>
-                                Find answers to common questions or contact support here.
-                                (Functionality for FAQs, contact forms goes here.)
-                            </p>
-                        </section>
-                    )}
-
                 </main>
             </div>
         </div>
