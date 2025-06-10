@@ -1,12 +1,12 @@
 const sql = require('mssql');
 
 const config = {
-  user: 'abc',
-    password: '1111',
-    server: 'NEXERA\\SQLEXPRESS', // Or use your server's IP address or hostname
-  database: 'lostandfound',
+  user: 'abdullah',
+    password: '1234',
+    server: 'localhost', // Or use your server's IP address or hostname
+  database: 'Lost_And_Found',
   options: {
-    encrypt: true, // Use encryption for secure connections
+    encrypt: true, // Use encryptison for secure connections
     trustServerCertificate: true, // Disable SSL validation (not recommended for production)
   },
 };

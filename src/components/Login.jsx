@@ -33,8 +33,8 @@ function Login() {
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Email is invalid';
     }
-    else if (email && !email.includes('@umt.edu.pk')){
-      newErrors.email='use umt domain @umt at the end';
+    else if (email && !email.includes('@lgu.edu.pk')){
+      newErrors.email='use umt domain @lgu.edu.pk at the end';
     }
     
     if (!password) {

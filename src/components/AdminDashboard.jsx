@@ -543,9 +543,8 @@ const AdminDashboard = () => {
             const postsData = await postsResponse.json();
             setPosts(postsData);
             setTotalPosts(postsData.length);
-            // const usersCount = await (await fetch(`${API_BASE_URL}/api/users/total`)).json();
-            setTotalUsers(15); // Mock user count for demonstration
-
+            const usersCount = await (await fetch(`${API_BASE_URL}/api/users/total`)).json();
+            setTotalUsers(usersCount.length); // Mock user count for demonstration
         } catch (err) {
             setError(`Failed to fetch dashboard data: ${err.message}`);
             console.error("Fetch dashboard data error:", err);
@@ -614,7 +613,7 @@ const AdminDashboard = () => {
         setModalType('info');
     };
 
-    const pendingPosts = posts.filter(post => post.type !== 'claim' && post.status && post.status.trim() === 'pending');
+    const pendingPosts = posts.filter(post => post.type !== 'claim' && post.status );
     const approvedPosts = posts.filter(post => post.type !== 'claim' && post.status && post.status.trim() === 'approved');
     const archivedPosts = posts.filter(post => post.type !== 'claim' && post.status && post.status.trim() === 'archived');
     const pendingClaims = posts.filter(post => post.type === 'claim' && post.claimStatus && post.claimStatus.trim() === 'pending');
@@ -885,12 +884,12 @@ const AdminDashboard = () => {
                                             </div>
                                             <div style={styles.actionButtonContainer}>
                                                 <button
-                                                    onClick={() => handleAction(post.id, post.type, 'approve')}
+                                                    onClick={() => handleAction(post.id, post.type, 'delete')}
                                                     style={{ ...styles.actionButton, ...styles.approveButton }}
                                                     disabled={actionLoadingId === post.id}
                                                 >
                                                     {actionLoadingId === post.id ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
-                                                    Approve
+                                                    Delete
                                                 </button>
                                                 <button
                                                     onClick={() => handleAction(post.id, post.type, 'archive')}

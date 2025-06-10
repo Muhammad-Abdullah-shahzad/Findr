@@ -46,7 +46,7 @@ function Login() {
       newErrors.email = "Email is invalid";
     }
      else if (email && !email.includes('@lgu.edu.pk')){
-      newErrors.email='use umt domain @umt at the end';
+      newErrors.email='use lgu domain @lgu.edu.pk at the end';
     }
     
     if (!password) {

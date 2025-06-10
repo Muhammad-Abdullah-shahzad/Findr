@@ -11,75 +11,99 @@ const ChatComponent = ({ otherUser, currentUserId, onBack }) => {
 
     const API_BASE_URL = 'http://localhost:5000'; // Make sure this matches your backend
 
-    async function fetchMessages() {
-        setLoading(true);
+    // Use a ref to store the latest messages to avoid stale closures in the interval
+    const latestMessagesRef = useRef(messages);
+    useEffect(() => {
+        latestMessagesRef.current = messages;
+    }, [messages]);
+
+
+    // Refactored fetchMessages to be a useCallback to ensure stable function reference
+    const fetchMessages = useCallback(async () => {
+        // Only show loading indicator on initial fetch, not on subsequent polls
+        // This avoids flickering for the user if messages haven't changed.
+        if (messages.length === 0) { // Only set loading true if it's the initial fetch
+            setLoading(true);
+        }
         setError(null);
-        console.log("ChatComponent: fetchMessages called.", { currentUserId, otherUser });
+
         if (!currentUserId || !otherUser?.userid) {
             console.warn("ChatComponent: Skipping fetchMessages due to missing currentUserId or otherUser.userid");
-            setLoading(false);
+            setLoading(false); // Ensure loading is false even if fetch is skipped
             return;
         }
 
         try {
-            console.log(`ChatComponent: Fetching messages for sender ${currentUserId} and receiver ${otherUser.userid}`);
             const response = await fetch(`${API_BASE_URL}/api/chat/messages?senderId=${currentUserId}&receiverId=${otherUser.userid}`);
             if (!response.ok) {
                 const errData = await response.json();
                 throw new Error(errData.message || 'Failed to fetch messages');
             }
             const data = await response.json();
-            console.log("ChatComponent: Fetched messages data:", data);
-            setMessages(data);
-            console.log("ChatComponent: Messages state after fetch:", data); // Log the new state directly
+
+            // --- IMPORTANT FIX: Only update state if data has truly changed ---
+            // We compare by messageId to ensure new messages are detected.
+            // If the number of messages is different, or if the latest message ID is new, update.
+            // This prevents unnecessary re-renders.
+            if (data.length !== messages.length ||
+                (data.length > 0 && messages.length > 0 &&
+                 data[data.length - 1].messageId !== messages[messages.length - 1].messageId)) {
+                
+                console.log("ChatComponent: New messages detected. Updating state.");
+                setMessages(data);
+                // Also scroll to bottom here if new messages are detected, to ensure it happens.
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            } else {
+                console.log("ChatComponent: No new messages. Skipping state update.");
+            }
+            // --- END IMPORTANT FIX ---
+
         } catch (err) {
             setError(`Error loading messages: ${err.message}`);
             console.error("ChatComponent: Fetch messages error:", err);
         } finally {
-            setLoading(false);
+            // Ensure loading is set to false only if it was true (for initial load)
+            if (messages.length === 0) {
+                 setLoading(false);
+            }
         }
-    }
+    }, [currentUserId, otherUser, messages.length]); // Added messages.length to dependencies
 
     useEffect(() => {
-        console.log("ChatComponent useEffect (mount/props change):", { currentUserId, otherUser });
-        // Ensure both users are defined before attempting to fetch messages
+        // Ensure both users are defined before attempting to fetch messages or set up polling
         if (!currentUserId || !otherUser?.userid) {
-            console.log("ChatComponent useEffect: Missing currentUserId or otherUser.userid, cannot fetch messages.", { currentUserId, otherUser });
             setLoading(false);
             return;
         }
 
-        console.log("ChatComponent useEffect: Initial fetch and setting up polling for", { currentUserId, otherUser });
-
+        // Initial fetch
         fetchMessages();
 
-        // Polling for new messages (adjust interval as needed)
+        // Polling for new messages
         const pollingInterval = setInterval(() => {
-            console.log("ChatComponent: Polling for new messages...");
             fetchMessages();
-        }, 5000); // Poll every 5 seconds
+        }, 1000); // Poll every 1 seconds
 
+        // Cleanup function
         return () => {
-            console.log("ChatComponent useEffect cleanup: Clearing polling interval.");
             clearInterval(pollingInterval);
         };
+    }, [currentUserId, otherUser, fetchMessages]); // Add fetchMessages to dependencies
 
-    }, [currentUserId, otherUser]); // otherUser includes userid, firstName, lastName
-
+    // This useEffect is now mostly for initial scroll or if component re-renders for other reasons
+    // The primary scroll trigger for new messages is now within fetchMessages itself
     useEffect(() => {
-        console.log("ChatComponent useEffect (messages update): Messages updated, attempting to scroll to bottom.", messages);
-        // Scroll to the bottom of the chat when messages update
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+        // Only scroll on initial load or if messages are first populated
+        if (messages.length > 0 && messagesEndRef.current && messages.length === latestMessagesRef.current.length) {
+            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, []); // Only runs once on mount, as a fallback
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
         if (!newMessage.trim() || !currentUserId || !otherUser?.userid) {
-            console.warn("ChatComponent: Skipping sendMessage due to empty message or missing user IDs.", { newMessage, currentUserId, otherUser });
             return;
         }
-
-        console.log("ChatComponent: Attempting to send message:", { senderId: currentUserId, receiverId: otherUser.userid, messageText: newMessage });
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/chat/send`, {
@@ -87,7 +111,7 @@ const ChatComponent = ({ otherUser, currentUserId, onBack }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     senderId: currentUserId,
-                    receiverId: otherUser.userid, // The user you are sending the message to
+                    receiverId: otherUser.userid,
                     messageText: newMessage,
                 }),
             });
@@ -97,27 +121,30 @@ const ChatComponent = ({ otherUser, currentUserId, onBack }) => {
                 throw new Error(errData.message || 'Failed to send message');
             }
 
-            console.log("ChatComponent: Message sent successfully to backend. Optimistically updating UI.");
             // Optimistically update UI with the new message
             const sentMessage = {
-                messageId: Date.now(), // Temp ID for UI, actual ID from DB will be fetched shortly
+                // IMPORTANT: Use a unique, temporary ID if your backend doesn't return one immediately
+                // For real apps, you'd usually get the DB ID back from the send endpoint.
+                // Using Date.now() is a simple temporary fix if backend doesn't return ID.
+                messageId: Date.now(), // This assumes messageId is unique enough for client-side keying
                 senderId: currentUserId,
                 receiverId: otherUser.userid,
                 messageText: newMessage,
-                sentAt: new Date().toISOString(),
+                sentAt: new Date().toISOString(), // Use ISO string for consistent date parsing
             };
+            
+            // Optimistic update logic, ensuring scroll on new message
             setMessages(prevMessages => {
-                console.log("ChatComponent: Previous messages state (optimistic update):", prevMessages);
                 const newState = [...prevMessages, sentMessage];
-                console.log("ChatComponent: New messages state (optimistic update):", newState);
+                // Scroll immediately after optimistic update
+                // messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); // Moved to fetchMessages too
                 return newState;
             });
             setNewMessage('');
 
-            // After sending, immediately re-fetch to get the confirmed message from DB, including its real ID
-            // This helps with persistence on refresh and ensures receiver gets updates.
-            console.log("ChatComponent: Triggering immediate fetchMessages after send.");
-            fetchMessages();
+            // After sending, immediately re-fetch to get the confirmed message from DB
+            // This is crucial for syncing with the actual database and getting proper message IDs.
+            fetchMessages(); 
 
         } catch (err) {
             setError(`Error sending message: ${err.message}`);
@@ -128,9 +155,8 @@ const ChatComponent = ({ otherUser, currentUserId, onBack }) => {
 
     const getSenderName = (senderId) => {
         if (senderId === currentUserId) return "You";
-        // Assuming otherUser prop has firstName and lastName
         if (senderId === otherUser?.userid) return `${otherUser.firstName} ${otherUser.lastName}`;
-        return "Unknown User"; // Should not happen if logic is correct
+        return "Unknown User";
     };
 
     // Style definitions (replicated from UserDashboard/AdminDashboard for consistency)

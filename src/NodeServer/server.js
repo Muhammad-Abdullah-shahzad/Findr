@@ -318,7 +318,7 @@ else  if (req.method === 'POST' && url.pathname === '/signup') {
         FROM LostItems l
         INNER JOIN Categories c ON l.categoryID = c.categoryId
         INNER JOIN Users u ON l.userID = u.userid
-        WHERE itemFoundStatus=0 and status = 'approved'
+        WHERE itemFoundStatus=0 
       `;
   
       if (search) {
@@ -519,7 +519,7 @@ else  if (req.method === 'POST' && url.pathname === '/signup') {
         FROM FoundItems f
         INNER JOIN Categories c ON f.categoryID = c.categoryId
         INNER JOIN Users u ON f.userID = u.userid
-        WHERE  status = 'approved'
+         where isClaimed = 0
       `;
   
       if (search) {
@@ -1128,7 +1128,7 @@ else if (req.method === 'GET' && url.pathname === '/api/admin/posts') {
 // Make sure you have 'sql' and 'connectDB' imported at the top of your server.js.
 
 // --- APPROVE POST Route (CORRECTED: Dynamic Table Name Handling) ---
-else if (req.method === 'POST' && url.pathname.startsWith('/api/admin/posts/') && url.pathname.endsWith('/approve')) {
+else if (req.method === 'POST' && url.pathname.startsWith('/api/admin/posts/') && url.pathname.endsWith('/delete')) {
   try {
       const ADMIN_UID = 7; // Your defined admin user ID
       const requestingUserId = parseInt(url.query.uID); // User ID from query parameter
@@ -1157,20 +1157,23 @@ else if (req.method === 'POST' && url.pathname.startsWith('/api/admin/posts/') &
       // 1. Update the item status to 'approved'
       // *** CRITICAL FIX HERE: Dynamically construct the SQL string for the table name ***
       // You cannot parameterize table names directly with template literals.
-      const updateQuery = `
-          UPDATE ${tableName}
-          SET status = 'approved'
-          WHERE id = @postId;
-      `;
+      const deleteQuery =(tableName==='LostItems')? `
+          Delete from LostItems
+          where id = ${postId}
+      `:`
+      Delete from ClaimRequests
+      where foundItemId = ${postId};
+      Delete from FoundItems
+      where id = ${postId};`
       // Now, create a request and pass the parameter explicitly
       const request = new sql.Request(); // Use new sql.Request() without 'pool' if connectDB doesn't return it
       request.input('postId', sql.Int, postId); // Define the postId parameter
 
-      const updateResult = await request.query(updateQuery); // Execute the query
+      const updateResult = await request.query(deleteQuery); // Execute the query
 
       if (updateResult.rowsAffected[0] === 0) {
           // Item not found or already approved
-          sendJSON(res, 404, { message: `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} item not found or already approved.` });
+          sendJSON(res, 404, { message: `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} item not found.` });
       } else {
           // 2. Fetch the original poster's userID and itemName for notification
           // Also need to construct this query string dynamically for the tableName
@@ -1184,7 +1187,7 @@ else if (req.method === 'POST' && url.pathname.startsWith('/api/admin/posts/') &
 
           // 3. If item owner found, create and save notification to DB
           if (itemOwnerId) {
-              const notificationMessage = `Your ${itemType} item "${itemName}" has been approved by an administrator!`;
+              const notificationMessage = `Your ${itemType} item "${itemName}" no longer exist`;
 
               // Save notification to DB using sql.query - This can use template literal directly as no dynamic table name
               await sql.query`
@@ -1198,7 +1201,7 @@ else if (req.method === 'POST' && url.pathname.startsWith('/api/admin/posts/') &
       }
 
   } catch (error) {
-      console.error('Error approving post:', error);
+      console.error('Error Deleting post:', error);
       // Check if response has already been sent to avoid "Cannot set headers after they are sent"
       if (!res.headersSent) {
           sendJSON(res, 500, { message: 'Server error during post approval.' });
@@ -1400,7 +1403,8 @@ else if (req.method === 'POST' && url.pathname.startsWith('/api/admin/claims/'))
               UPDATE ClaimRequests
               SET status = @newStatus
               WHERE claimId = @claimId AND status = 'pending'; -- Only update if currently pending
-          `;
+              
+              `;
 
       if (updateResult.rowsAffected[0] === 0) {
           // await request.query('ROLLBACK;'); // Uncomment if using transactions
@@ -1429,15 +1433,17 @@ else if (req.method === 'POST' && url.pathname.startsWith('/api/admin/claims/'))
           sendJSON(res, 404, { message: 'Could not retrieve claim details for notification.' });
           return;
       }
-
+     
+      
       const claimDetails = claimDetailsResult.recordset[0];
       const { claimantId, foundItemId, finderId, foundItemName } = claimDetails;
 
       // 3. Construct and insert notifications based on action
       if (action === 'approve') {
+
           notificationMessageToClaimant = `Your claim for '${foundItemName}' (Item ID: ${foundItemId}) has been APPROVED! Please contact the item finder (User ID: ${finderId}) to arrange pickup.`;
           notificationMessageToFinder = `A claim for your found item '${foundItemName}' (Item ID: ${foundItemId}) has been APPROVED by the admin. The claimant's User ID is ${claimantId}. Please arrange the return of the item.`;
-
+       
           // Notify Claimant
           await request
               .input('recipientIdClaimant', sql.Int, claimantId)
@@ -1458,6 +1464,10 @@ else if (req.method === 'POST' && url.pathname.startsWith('/api/admin/claims/'))
                   VALUES (@recipientIdFinder, @senderIdAdmin2, @messageFinder);
               `;
 
+                //delete found item after it has been approved
+         await sql.query(`
+         UPDATE FoundItems set isClaimed = 1 where id =${foundItemId}
+         `) 
       } else if (action === 'reject') { // action === 'reject'
           notificationMessageToClaimant = `Your claim for '${foundItemName}' (Item ID: ${foundItemId}) has been REJECTED. If you believe this is an error, please review the item details or contact support.`;
           notificationMessageToFinder = `A claim for your found item '${foundItemName}' (Item ID: ${foundItemId}) has been REJECTED by the admin. Your item is still listed as found.`;
@@ -1599,6 +1609,17 @@ else if (req.method === 'GET' && url.pathname === '/api/chat/conversations') {
         console.error('Error fetching chat conversations:', error);
         sendJSON(res, 500, { message: 'Server error fetching conversations.' });
     }
+}
+else if (req.method==='GET' && url.pathname==='/api/users/total'){
+  try{
+    const userResult = await (await sql.query('SELECT * FROM Users')).recordset
+    sendJSON(res,200,userResult);
+  }
+  catch(error){
+    sendJSON(res,200,{error:"cannot find users"});
+console.log('failed to get users',error);
+  }
+
 }
 
   else {
