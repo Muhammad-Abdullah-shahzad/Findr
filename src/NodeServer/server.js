@@ -6,7 +6,7 @@ const { parse,URL } = require('url');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { sql, connectDB } = require('./Database/database'); // Using your DB config file
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://findr-api-server.azurewebsites.net/api';
 const cloudinary =require('cloudinary').v2
 const stringSimilarity = require('string-similarity');
 const geolib = require('geolib');
@@ -196,6 +196,9 @@ const server = http.createServer(async (req, res) => {
       }
     });
     return;
+  }
+  else if(req.method==='GET' && url.pathname==='/'){
+    sendJSON(res,200,{message:'api server is deployed and working'})
   }
 else  if (req.method === 'POST' && url.pathname === '/signup') {
     let body = '';
@@ -1621,10 +1624,9 @@ console.log('failed to get users',error);
   }
 
 }
-
   else {
-    
+    sendJSON(res, 404, { message: 'Not Found' })
   }
 });
 
-server.listen(5000, () => console.log('Server running on http://localhost:5000'));
+server.listen(process.env.PORT, () => console.log(`Server running on http://localhost:${process.env.PORT}`));

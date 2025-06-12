@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { HeartIcon, Heart, MessageCircle, Search, Calendar, MapPin, User, Phone, Clock, Package, Filter, Zap, X, Info, Award, HelpCircle } from 'lucide-react';
 import { FaHeart } from "react-icons/fa";
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://findr-api-server.azurewebsites.net/api';
 
 const LostItemsList = () => {
   const [items, setItems] = useState([]);

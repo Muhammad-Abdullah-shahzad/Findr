@@ -31,9 +31,8 @@ const AdminDashboard = () => {
 
     // --- Configuration ---
     const ADMIN_UID = 7;
-    const API_BASE_URL = 'http://localhost:5000';
+    const API_BASE_URL = 'https://findr-api-server.azurewebsites.net';
     // --- End Configuration ---
-
     const styles = {
         container: {
             fontFamily: "'Inter', sans-serif",

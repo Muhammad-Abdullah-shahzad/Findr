@@ -38,7 +38,7 @@ const UserDashboard = () => {
     const [chatWithUser, setChatWithUser] = useState(null); // New state to store chat recipient's data
     const [conversations, setConversations] = useState([]); // New state for list of conversations
 
-    const API_BASE_URL = 'http://localhost:5000'; // Define API base URL here
+    const API_BASE_URL = 'https://findr-api-server.azurewebsites.net'; // Define API base URL here
 
     const styles = {
         container: {

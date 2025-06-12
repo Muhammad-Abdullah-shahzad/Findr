@@ -1,5 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { ImCross } from "react-icons/im";
+import React, { useEffect, useState ,useRef } from 'react';
+import { MdArrowBackIos} from "react-icons/md";
 import { useNavigate } from 'react-router-dom'; // Assuming this will be used if navigation is fully set up
+
+import "./landingpage.css"
 import {
   Search,
   MapPin,
@@ -9,7 +13,8 @@ import {
   Smartphone,
   Star,
   Quote,
-  Heart
+  Heart,
+  Cross
 } from 'lucide-react';
 // Removed "./landingPage.css" import as styles are handled inline or in the style tag
 
@@ -18,9 +23,12 @@ import {
 
 
 export default function LostFoundLanding() {
+const [navLinks,setNav] = useState({})
   const navigation = useNavigate()
   useEffect(() => {
     window.scrollTo(0, 0)
+    const navlinks = document.querySelector('.nav-links-container')
+    setNav(navlinks)
   }, [])
 
   const [email, setEmail] = useState('');
@@ -90,7 +98,7 @@ export default function LostFoundLanding() {
       color: '#334155',
       background: '#f8fafc',
       minHeight: '100vh',
-      overflowX: 'hidden',
+      overflowX: 'hidden', // Prevent horizontal scroll
     },
     // Modified maxWidth to remove horizontal padding for the navbar specifically
     maxWidth: {
@@ -554,6 +562,7 @@ export default function LostFoundLanding() {
 
   return (
     <div style={styles.container}>
+      {/* Global styles and media queries for responsiveness */}
       <style>{`
         /* Blinking cursor for typewriter */
         .typewriter-cursor {
@@ -623,24 +632,217 @@ export default function LostFoundLanding() {
           filter: brightness(1.2);
         }
         
-        /* Responsive adjustments for smaller screens if needed */
-        @media (max-width: 768px) {
-          .nav-links-container { /* Target the div holding navLinks */
-            display: none; /* Example: Hide links, implement burger menu */
+        /* --- Responsive adjustments for various screen sizes --- */
+
+        /* Extra Small devices (e.g., small phones, < 480px) */
+        @media (max-width: 480px) {
+          .navContent {
+            flex-direction: column; /* Stack logo and buttons */
+            align-items: center;
+            gap: 1rem;
           }
-          .hero-title-container { /* Target hero title */
-              font-size: 2.5rem; /* Adjust font size for mobile */
+          .nav-links-container {
+            display: none; /* Hide for very small screens - consider burger menu if functionality allows*/
           }
-           .hero-buttons-container button { /* Target hero buttons */
-             width: 100%;
+          .hero-title-container {
+            font-size: 2rem !important; /* Smaller title for tiny screens */
+            margin-left: 10px;
+            margin-right: 10px;
+          }
+          .hero-title-container span:first-child { /* Adjust static part of title */
+            margin-right: 0 !important; /* Remove margin for stacking */
+            display: block; /* Force to new line if wrapping */
+          }
+          .heroGradient {
+            min-width: unset !important; /* Allow text to wrap naturally */
+            text-align: center !important;
+          }
+          .heroSubtitle {
+            font-size: 0.9rem !important; /* Smaller subtitle */
+            padding: 0 15px; /* Adjust padding */
+          }
+          .hero-buttons-container {
+            flex-direction: column; /* Stack buttons */
+            width: 90%;
+            margin-left: auto;
+            margin-right: auto;
+          }
+          .hero-buttons-container button {
+             width: 100%; /* Full width buttons */
              margin-bottom: 10px;
            }
-           .stats-grid-container { /* Target stats grid */
-             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          .stats-grid-container {
+             grid-template-columns: 1fr; /* Stack stats items */
+             padding: 0 20px;
+          }
+          .stat-item-hoverable {
+            padding: 1.5rem 1rem !important;
+          }
+          .main-grid-container {
+             grid-template-columns: 1fr !important; /* Stack cards on mobile */
+             padding: 0 20px;
+             gap: 2rem !important;
            }
-           .main-grid-container { /* Target main content grids */
-             grid-template-columns: 1fr; /* Stack cards on mobile */
+          .sectionTitle {
+            font-size: 1.8rem !important;
+            padding: 0 15px;
+          }
+          .sectionSubtitle {
+            font-size: 0.95rem !important;
+            padding: 0 15px;
+            margin-bottom: 2rem !important;
+          }
+          .card, .testimonialCard {
+            padding: 1.5rem !important;
+          }
+          .emailSignup {
+            flex-direction: column; /* Stack email input and button */
+            width: 90%;
+            margin-left: auto;
+            margin-right: auto;
+            gap: 0.8rem !important;
+          }
+          .emailInput {
+            flex: 1 1 auto !important; /* Allow input to take full width */
+            min-width: unset !important;
+          }
+          .ctaTitle {
+            font-size: 1.8rem !important;
+          }
+          .ctaSubtitle {
+            font-size: 0.95rem !important;
+          }
+          .contentMaxWidth {
+            padding: 0 16px !important; /* Tighter padding for very small screens */
+          }
+        }
+
+        /* Small to Medium devices (e.g., phones, 481px - 768px) */
+        @media (min-width: 481px) and (max-width: 768px) {
+          .navContent {
+            padding: 0 20px; /* Slightly more padding */
+          }
+          .nav-links-container { /* Hide navigation links on smaller screens */
+            display: none; 
+          }
+          .hero-title-container {
+              font-size: 2.8rem !important; /* Adjust font size for mobile */
+              padding: 0 20px;
+          }
+          .heroGradient {
+             min-width: 180px !important; /* Ensure gradient text has space */
+          }
+           .hero-buttons-container {
+             gap: 1rem !important;
+             flex-direction: row; /* Keep buttons in a row for slightly larger phones */
+             flex-wrap: wrap; /* Allow wrapping if content is too wide */
+             padding: 0 20px;
            }
+           .hero-buttons-container button {
+             flex: 1 1 auto; /* Allow buttons to grow/shrink */
+             min-width: 150px; /* Minimum width for buttons */
+           }
+           .stats-grid-container {
+             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important; /* Two columns on most phones */
+             padding: 0 20px;
+           }
+           .main-grid-container {
+             grid-template-columns: 1fr !important; /* Stack cards on mobile */
+             padding: 0 20px;
+           }
+           .sectionTitle {
+            font-size: 2rem !important;
+            padding: 0 20px;
+           }
+           .sectionSubtitle {
+            padding: 0 20px;
+           }
+           .emailSignup {
+            flex-direction: column; /* Stack email input and button */
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+           }
+           .emailInput {
+            flex: 1 1 auto !important;
+           }
+        }
+
+        /* Medium to Large devices (e.g., tablets, 769px - 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .navContent {
+            padding: 0 30px; /* Adjust padding for tablets */
+          }
+          .nav-links-container { /* Show nav links on tablets, but adjust gap */
+            display: flex;
+            gap: 1.5rem !important;
+          }
+          .hero-title-container {
+            font-size: clamp(3rem, 5vw, 3.5rem) !important;
+          }
+          .heroSubtitle {
+            font-size: 1.05rem !important;
+          }
+          .stats-grid-container {
+             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important; /* 2-4 columns on tablets */
+             padding: 0 30px;
+           }
+           .main-grid-container, .testimonialGrid {
+             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important; /* 2-3 columns on tablets */
+             padding: 0 30px;
+           }
+           .sectionTitle {
+            font-size: 2.5rem !important;
+           }
+           .emailSignup {
+            flex-direction: row; /* Keep in row for tablets */
+            flex-wrap: nowrap;
+           }
+           .emailInput {
+            flex: 1 1 auto !important;
+           }
+           .contentMaxWidth {
+            padding: 0 24px !important; /* Default padding for content */
+          }
+        }
+
+        /* Large devices (Desktops, > 1024px) - mostly uses existing styles, but define explicitly for clarity */
+        @media (min-width: 1025px) {
+          .navContent {
+            padding: 0 24px;
+          }
+          .nav-links-container {
+            display: flex; /* Ensure visible on desktop */
+            gap: 2.5rem;
+          }
+          .hero-title-container {
+            font-size: 3.8rem;
+          }
+          .heroSubtitle {
+            font-size: 1.15rem;
+          }
+          .stats-grid-container {
+             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+           }
+           .main-grid-container {
+             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+           }
+           .testimonialGrid {
+             grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+           }
+           .sectionTitle {
+            font-size: 3rem;
+           }
+           .emailSignup {
+            flex-direction: row;
+            flex-wrap: nowrap;
+           }
+           .emailInput {
+            flex: 1 1 300px;
+           }
+           .contentMaxWidth {
+            padding: 0 24px; /* Default padding for content */
+          }
         }
       `}</style>
 
@@ -655,7 +857,12 @@ export default function LostFoundLanding() {
           </div>
 
           {/* Centered navigation links */}
-          <div style={styles.navLinksCentered} className="nav-links-container">
+          <div style={styles.navLinksCentered} className="nav-links-container" >
+          <div className="closeBTN" onClick={()=>{
+            navLinks.classList.toggle('show-navbar')
+          }}>
+                   <ImCross/>
+           </div>
             <a href="#features" style={styles.navLink} className="nav-link-hoverable">Features</a>
             <a href="#how-it-works" style={styles.navLink} className="nav-link-hoverable">How It Works</a>
             <a href="#testimonials" style={styles.navLink} className="nav-link-hoverable">Reviews</a>
@@ -713,7 +920,11 @@ export default function LostFoundLanding() {
         </div>
       </nav>
 
-      <section style={styles.hero}>
+      <section style={styles.hero} className='heroSection'>
+        <div className='menu-btn'  onClick={
+          ()=>{
+                navLinks.classList.toggle('show-navbar')
+        }}><MdArrowBackIos/></div>
         <div style={styles.heroBackground}></div>
         <div style={{...styles.contentMaxWidth, ...styles.heroContent}}> {/* Use contentMaxWidth here */}
           <h1 style={styles.heroTitle} className="hero-title-container">

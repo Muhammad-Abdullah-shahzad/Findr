@@ -47,7 +47,7 @@
     { value: 'Others', label: 'Others', icon: <HelpCircle /> }
   ];
 
-  const API_BASE = 'http://localhost:5000/api';
+  const API_BASE = 'https://findr-api-server.azurewebsites.net/api';
 
   const FoundItem = () => {
     useEffect(() => {

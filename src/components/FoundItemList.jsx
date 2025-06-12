@@ -6,7 +6,7 @@ import { FaHeart } from "react-icons/fa"; // Using FaHeart for consistency with 
 // You can uncomment this if you have the file and need to use the function for an "add item" feature
 // import uploadImageToCloudinary from "./cloudinaryImageUpload";
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://findr-api-server.azurewebsites.net/api';
 
 const FoundItemList = () => {
   const [items, setItems] = useState([]);
@@ -83,7 +83,7 @@ const FoundItemList = () => {
   const handleClaim = async (itemId, userId, message) => {
     try {
       // 1. Submit claim request
-      const claimResponse = await fetch('http://localhost:5000/claim-request', {
+      const claimResponse = await fetch('https://findr-api-server.azurewebsites.net/claim-request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ const FoundItemList = () => {
       }
   
       // 2. Send notification to the finder
-      const notifyResponse = await fetch('http://localhost:5000/send-notification', {
+      const notifyResponse = await fetch('https://findr-api-server.azurewebsites.net/send-notification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

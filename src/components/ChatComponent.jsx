@@ -9,7 +9,7 @@ const ChatComponent = ({ otherUser, currentUserId, onBack }) => {
     const [error, setError] = useState(null);
     const messagesEndRef = useRef(null);
 
-    const API_BASE_URL = 'http://localhost:5000'; // Make sure this matches your backend
+    const API_BASE_URL = 'https://findr-api-server.azurewebsites.net'; // Make sure this matches your backend
 
     // Use a ref to store the latest messages to avoid stale closures in the interval
     const latestMessagesRef = useRef(messages);

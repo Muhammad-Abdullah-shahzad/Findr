@@ -594,7 +594,7 @@ const LostItemReportForm = () => {
     };
 
     try {
-      const response = await fetch('http://localhost:5000/report-lost-item', { // Adjust URL if needed
+      const response = await fetch('https://findr-api-server.azurewebsites.net/report-lost-item', { // Adjust URL if needed
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
