@@ -1,10 +1,10 @@
 const sql = require('mssql');
 
 const config = {
-  user: 'abdullah',
-    password: '1234',
-    server: 'localhost', // Or use your server's IP address or hostname
-  database: 'Lost_And_found',
+  user: 'process.env.user',
+    password: 'process.env.pass',
+    server: 'process.env.server', // Or use your server's IP address or hostname
+  database: 'process.env.db',
   options: {
     encrypt: true, // Use encryption for secure connections
     trustServerCertificate: true, // Disable SSL validation (not recommended for production)
