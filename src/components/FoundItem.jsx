@@ -1,4 +1,5 @@
   import React, { useState, useEffect } from 'react';
+  import './lostitem.css'
   import {
     Upload,
     MapPin,
@@ -14,6 +15,7 @@
     Award,
     Info
   } from 'lucide-react';
+
   import uploadImageToCloudinary from './cloudinaryImageUpload.js';
 
   const categories = [
@@ -168,12 +170,9 @@
       },
       mainContent: {
         display: 'grid',
-        gridTemplateColumns: '1fr 400px',
+        
         gap: '3rem',
-        '@media (max-width: 1024px)': {
-          gridTemplateColumns: '1fr',
-          gap: '2rem'
-        }
+      
       },
       formCard: {
         background: 'rgba(255, 255, 255, 0.9)',
@@ -185,6 +184,7 @@
         position: 'relative',
         overflow: 'hidden'
       },
+
       sidebarCard: {
         background: 'rgba(255, 255, 255, 0.9)',
         padding: '2rem',
@@ -196,6 +196,7 @@
         position: 'sticky',
         top: '2rem'
       },
+
       infoCard: {
         background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05))',
         border: '1px solid rgba(99, 102, 241, 0.1)',
@@ -227,6 +228,7 @@
         color: '#0f172a',
         fontSize: '1rem'
       },
+
       input: {
         width: '100%',
         padding: '1rem 1.25rem',
@@ -239,10 +241,12 @@
         outline: 'none',
         boxSizing: 'border-box'
       },
+
       inputFocused: {
         borderColor: '#6366f1',
         boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.1)'
       },
+
       textarea: {
         width: '100%',
         padding: '1rem 1.25rem',
@@ -258,6 +262,7 @@
         fontFamily: 'inherit',
         boxSizing: 'border-box'
       },
+
       select: {
         width: '100%',
         padding: '1rem 1.25rem',
@@ -271,12 +276,15 @@
         cursor: 'pointer',
         boxSizing: 'border-box'
       },
+
       imageUpload: {
         marginBottom: '2rem'
       },
+
       imageUploadInput: {
         display: 'none'
       },
+
       imageUploadLabel: {
         display: 'block',
         border: '2px dashed rgba(99, 102, 241, 0.3)',
@@ -289,19 +297,23 @@
         position: 'relative',
         overflow: 'hidden'
       },
+
       imageUploadLabelHover: {
         borderColor: '#6366f1',
         background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05))'
       },
+
       imagePreview: {
         width: '100%',
         maxHeight: '300px',
         objectFit: 'cover',
         borderRadius: '12px'
       },
+
       uploadPlaceholder: {
         color: '#64748b'
       },
+
       uploadIcon: {
         width: '60px',
         height: '60px',
@@ -314,27 +326,31 @@
         color: 'white',
         boxShadow: '0 8px 25px rgba(99, 102, 241, 0.3)'
       },
+
       uploadText: {
         marginTop: '1rem',
         fontWeight: '600',
         fontSize: '1.1rem',
         color: '#0f172a'
       },
+
       uploadSubtext: {
         fontSize: '0.95rem',
         color: '#64748b',
         marginTop: '0.5rem'
       },
+
       locationGroup: {
         position: 'relative'
       },
+
       locationButton: {
         position: 'absolute',
         right: '12px',
         top: '44px',
         background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
         color: 'white',
-        padding: '0.75rem 1rem',
+       
         borderRadius: '8px',
         border: 'none',
         display: 'flex',
@@ -636,7 +652,7 @@
           </div>
 
           {/* Main Content */}
-          <div style={styles.mainContent}>
+          <div style={styles.mainContent} className='foundItemsParentForm'>
             {/* Form Card */}
             <div style={styles.formCard}>
               {/* Image Upload */}
@@ -704,6 +720,7 @@
               <div style={{ ...styles.formGroup, ...styles.locationGroup }}>
                 <label style={styles.label}>Where did you find it?</label>
                 <input
+                  className='locationInput'
                   type="text"
                   name="location"
                   value={form.location}
@@ -715,6 +732,7 @@
                 />
                 {showLocationBtn && (
                   <button
+                    className="locationBTN"
                     type="button"
                     style={styles.locationButton}
                     onClick={handleUseCurrentLocation}
@@ -750,6 +768,7 @@
               <div style={styles.formGroup}>
                 <label style={styles.label}>Contact Information</label>
                 <input
+                className='locationInput'
                   type="text"
                   name="contactInfo"
                   value={form.contactInfo}
@@ -762,6 +781,7 @@
 
               {/* Submit Button */}
               <button
+
                 type="button"
                 style={{ ...styles.submitButton, ...(submitting ? styles.submitButtonDisabled : {}) }}
                 onMouseEnter={(e) => {

@@ -1,0 +1,32 @@
+@media screen and (max-width: 900px) {
+  
+  .lostItemFormParent ,.foundItemsParentForm {
+    grid-template-columns: repeat(autofill, minmax(300px));
+  }
+
+  .locationInput {
+    padding: 27px;
+  }
+
+  .locationBTN {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+  }
+
+}
+
+@media screen and (min-width: 1000px) and (max-width: 1500px) {
+  .lostItemFormParent,.foundItemsParentForm {
+    grid-template-columns: 1fr 400px;
+  }
+
+  .locationInput {
+    padding: 1rem 1.25rem;
+  }
+
+  .locationBTN {
+    padding: 0.75rem 1rem;
+  }
+
+}

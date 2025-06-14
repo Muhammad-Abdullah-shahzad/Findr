@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import "./adminDashboard.css"
 import {
     Loader2,
     CheckCircle2,
@@ -15,6 +16,7 @@ import {
     Settings, // For general settings/admin tools
     LifeBuoy // For help & support
 } from 'lucide-react';
+import { GiHamburgerMenu } from "react-icons/gi";
 
 const AdminDashboard = () => {
     const [posts, setPosts] = useState([]);
@@ -29,10 +31,22 @@ const AdminDashboard = () => {
     const [totalPosts, setTotalPosts] = useState(0);
     const [totalUsers, setTotalUsers] = useState(0);
 
+    // This state is now used to control the sidebar's visibility directly via CSS class
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Changed to control sidebar visibility
+
+    // Removed the `sideBar` state and its `useEffect` manipulation
+    // const [sideBar,setSideBar]=useState({})
+    // useEffect(() => {
+    //  const s = document.querySelector('.sideBar')
+    //  console.log(s);
+    //  setSideBar(s)
+    // }, []);
+
     // --- Configuration ---
     const ADMIN_UID = 7;
     const API_BASE_URL = 'https://findr-api-server.azurewebsites.net';
     // --- End Configuration ---
+
     const styles = {
         container: {
             fontFamily: "'Inter', sans-serif",
@@ -53,32 +67,27 @@ const AdminDashboard = () => {
             }
         },
         sidebar: {
-            width: '25%',
-            minWidth: '250px',
-            maxWidth: '300px',
+            width: '40%',
+            minWidth: '150px',
+            maxWidth: '250px',
             flexShrink: 0,
             background: '#1e293b',
             borderRadius: '0rem 1rem 1rem 0rem',
             padding: '1.5rem',
             boxShadow: '0 8px 20px 0 rgba(0, 0, 0, 0.15)',
-            position: 'sticky',
-            top: '0',
+        //  position:"fixed", // This might conflict, will be handled by external CSS
             height: '100vh',
-            overflowY: 'auto',
+            overflowY: 'scroll',
             color: '#fff',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-start',
+            
             '@media (max-width: 1024px)': {
                 width: '100%',
-                maxWidth: 'none',
-                minWidth: 'unset',
-                position: 'static',
-                height: 'auto',
-                borderRadius: '0.75rem',
-                marginBottom: '1rem',
-                padding: '1rem',
-            }
+              
+            },
+            
         },
         sidebarHeader: {
             fontSize: '1.8rem',
@@ -92,14 +101,15 @@ const AdminDashboard = () => {
         },
         sidebarNav: {
             listStyle: 'none',
-            padding: 0,
+            padding: "0px",
             margin: 0,
-            width: '100%'
+            width: '100%',
+        
         },
         sidebarNavLink: {
             display: 'flex',
             alignItems: 'center',
-            padding: '0.8rem 1.2rem',
+            padding: '0.8rem 0.3rem',
             borderRadius: '0.75rem',
             color: 'rgba(255, 255, 255, 0.8)',
             textDecoration: 'none',
@@ -513,8 +523,8 @@ const AdminDashboard = () => {
                 gridTemplateColumns: '1fr',
             },
         },
-    };
-
+    };   
+  
     useEffect(() => {
         const uID = parseInt(localStorage.getItem('uID'));
         if (isNaN(uID) || uID !== ADMIN_UID) {
@@ -612,7 +622,8 @@ const AdminDashboard = () => {
         setModalType('info');
     };
 
-    const pendingPosts = posts.filter(post => post.type !== 'claim' && post.status );
+    // Corrected filter to ensure posts are 'pending' for the 'Pending Posts' section
+    const pendingPosts = posts.filter(post => post.type !== 'claim' && post.status && post.status.trim() === 'pending');
     const approvedPosts = posts.filter(post => post.type !== 'claim' && post.status && post.status.trim() === 'approved');
     const archivedPosts = posts.filter(post => post.type !== 'claim' && post.status && post.status.trim() === 'archived');
     const pendingClaims = posts.filter(post => post.type === 'claim' && post.claimStatus && post.claimStatus.trim() === 'pending');
@@ -649,6 +660,7 @@ const AdminDashboard = () => {
 
     return (
         <div style={styles.container}>
+            {/* Styles for hover effects and animations */}
             <style jsx>{`
                 .hover-effect:hover {
                     transform: translateY(-5px) scale(1.01);
@@ -669,15 +681,16 @@ const AdminDashboard = () => {
                 }
             `}</style>
 
-            <div style={styles.dashboardWrapper}>
+            <div style={styles.dashboardWrapper} className='dashboardWrapper'>
                 {/* Sidebar */}
-                <aside style={styles.sidebar}>
+                {/* Conditionally apply 'show' class based on isSidebarOpen state */}
+                <aside style={styles.sidebar} className={`sideBar ${isSidebarOpen ? 'show' : ''}`}>
                     <h2 style={styles.sidebarHeader}>Admin Dashboard</h2>
-                    <ul style={styles.sidebarNav}>
+                    <ul style={styles.sidebarNav} className='sideBarOptions'>
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'dashboard' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('dashboard')}
+                                onClick={() => { setActiveSection('dashboard'); setIsSidebarOpen(false); }} // Close sidebar on nav click
                                 className="sidebar-link-hoverable"
                             >
                                 <LayoutDashboard size={20} style={styles.sidebarNavIcon} />
@@ -687,7 +700,7 @@ const AdminDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'claimRequests' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('claimRequests')}
+                                onClick={() => { setActiveSection('claimRequests'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <Handshake size={20} style={styles.sidebarNavIcon} />
@@ -697,7 +710,7 @@ const AdminDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'pendingPosts' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('pendingPosts')}
+                                onClick={() => { setActiveSection('pendingPosts'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <Search size={20} style={styles.sidebarNavIcon} />
@@ -707,7 +720,7 @@ const AdminDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'approvedPosts' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('approvedPosts')}
+                                onClick={() => { setActiveSection('approvedPosts'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <CheckCircle2 size={20} style={styles.sidebarNavIcon} />
@@ -717,7 +730,7 @@ const AdminDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'archivedPosts' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('archivedPosts')}
+                                onClick={() => { setActiveSection('archivedPosts'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <Archive size={20} style={styles.sidebarNavIcon} />
@@ -729,7 +742,7 @@ const AdminDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'manageUsers' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('manageUsers')}
+                                onClick={() => { setActiveSection('manageUsers'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <Users size={20} style={styles.sidebarNavIcon} />
@@ -739,7 +752,7 @@ const AdminDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'settings' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('settings')}
+                                onClick={() => { setActiveSection('settings'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <Settings size={20} style={styles.sidebarNavIcon} />
@@ -749,7 +762,7 @@ const AdminDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'adminHelpSupport' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('adminHelpSupport')}
+                                onClick={() => { setActiveSection('adminHelpSupport'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <LifeBuoy size={20} style={styles.sidebarNavIcon} />
@@ -757,11 +770,19 @@ const AdminDashboard = () => {
                             </div>
                         </li>
                     </ul>
-                </aside>
+                </aside> 
 
                 {/* Main Dashboard Content */}
-                <main style={styles.mainContent}>
-                    {/* Dashboard Overview Section */}
+                <main style={styles.mainContent} className='mainAdminDashboard'>
+                    {/* Hamburger menu for mobile */}
+                    <div className="hamburger"
+                    onClick={()=>{
+                        // Toggle the isSidebarOpen state
+                        setIsSidebarOpen(!isSidebarOpen);
+                    }}
+                    >
+                        <GiHamburgerMenu/>
+                    </div>
                     {activeSection === 'dashboard' && (
                         <>
                             <div style={styles.header}>
@@ -882,9 +903,10 @@ const AdminDashboard = () => {
                                                 <span style={styles.infoText}>Description: <span style={styles.listItemDescription}>{post.description}</span></span>
                                             </div>
                                             <div style={styles.actionButtonContainer}>
+                                                {/* Reverted to original buttons for Pending Posts based on your previous code */}
                                                 <button
                                                     onClick={() => handleAction(post.id, post.type, 'delete')}
-                                                    style={{ ...styles.actionButton, ...styles.approveButton }}
+                                                    style={{ ...styles.actionButton, ...styles.approveButton }} // Using approve style for delete temporarily
                                                     disabled={actionLoadingId === post.id}
                                                 >
                                                     {actionLoadingId === post.id ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
@@ -947,7 +969,7 @@ const AdminDashboard = () => {
                         </section>
                     )}
 
-                    {/* Archived Posts Section - NOW MADE SIMILAR */}
+                    {/* Archived Posts Section */}
                     {activeSection === 'archivedPosts' && (
                         <section style={styles.card}>
                             <h2 style={styles.sectionTitle}>
@@ -1059,6 +1081,6 @@ const AdminDashboard = () => {
             )}
         </div>
     );
-};
+}; 
 
 export default AdminDashboard;

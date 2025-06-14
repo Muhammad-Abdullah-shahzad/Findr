@@ -952,7 +952,7 @@ const [navLinks,setNav] = useState({})
             <button 
               style={{ ...styles.btnSecondary, fontSize: '1rem', padding: '16px 32px' }}
               className="btn-secondary-hoverable"
-              onClick={() => alert('App download link would go here!')} // Placeholder action
+              onClick={() => alert('App in progress , you can use our web app till then')} // Placeholder action
             >
               <Smartphone style={{ marginRight: '10px', width: '20px', height: '20px'}} /> Download App
             </button>

@@ -14,7 +14,7 @@ import {
   Award,
   Info
 } from 'lucide-react';
-
+import './lostitem.css'
 // Import the Cloudinary upload function
 import uploadImageToCloudinary from "./cloudinaryImageUpload"; // Adjust path if needed
 
@@ -140,8 +140,8 @@ const LostItemReportForm = () => {
     },
     mainContent: {
       display: 'grid',
-      gridTemplateColumns: '1fr 400px',
-      gap: '3rem',
+      // gridTemplateColumns: '400px 1fr',
+      gap: '1rem',
       '@media (max-width: 1024px)': {
         gridTemplateColumns: '1fr',
         gap: '2rem'
@@ -201,7 +201,7 @@ const LostItemReportForm = () => {
     },
     input: {
       width: '100%',
-      padding: '1rem 1.25rem',
+     
       borderRadius: '12px',
       border: '2px solid rgba(203, 213, 225, 0.5)',
       fontSize: '1rem',
@@ -306,7 +306,7 @@ const LostItemReportForm = () => {
       top: '44px',
       background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
       color: 'white',
-      padding: '0.75rem 1rem',
+      
       borderRadius: '8px',
       border: 'none',
       display: 'flex',
@@ -692,9 +692,9 @@ const LostItemReportForm = () => {
         </div>
 
         {/* Main Content */}
-        <div style={styles.mainContent}>
+        <div style={styles.mainContent} className='lostItemFormParent'>
           {/* Form Card */}
-          <div style={styles.formCard}>
+          <div style={styles.formCard} className='formCard'>
             <form onSubmit={handleSubmit}>
               {/* Image Upload */}
               <div style={styles.formGroup}>
@@ -733,7 +733,7 @@ const LostItemReportForm = () => {
               {/* Item Name */}
               <div style={styles.formGroup}>
                 <label style={styles.label}>Item Name</label>
-                <input
+                <input className='locationInput'
                   type="text"
                   name="itemName"
                   value={formData.itemName}
@@ -760,7 +760,7 @@ const LostItemReportForm = () => {
               {/* Location */}
               <div style={{ ...styles.formGroup, ...styles.locationGroup }}>
                 <label style={styles.label}>Where did you lose it?</label>
-                <input
+                <input className='locationInput'
                   type="text"
                   name="location"
                   value={formData.location}
@@ -769,7 +769,8 @@ const LostItemReportForm = () => {
                   placeholder="Last known location (e.g., Central Park, Coffee Shop on Main St)"
                   required
                 />
-                <button
+                <button 
+                className='locationBTN'
                   type="button"
                   style={styles.locationButton}
                   onClick={handleGetLocation}
@@ -803,7 +804,7 @@ const LostItemReportForm = () => {
               {/* Contact Info */}
               <div style={styles.formGroup}>
                 <label style={styles.label}>Contact Information</label>
-                <input
+                <input className='locationInput'
                   type="text"
                   name="contactInfo"
                   value={formData.contactInfo}
@@ -817,6 +818,7 @@ const LostItemReportForm = () => {
               {/* Terms Checkbox */}
               <div style={styles.checkboxContainer}>
                 <input
+                
                   type="checkbox"
                   name="acceptedTerms"
                   checked={formData.acceptedTerms}
@@ -873,7 +875,7 @@ const LostItemReportForm = () => {
           {/* Sidebar */}
           <div>
             {/* Info Card */}
-            <div style={styles.sidebarCard}>
+            <div style={styles.sidebarCard} className='infoCard'>
               <div style={styles.infoCard}>
                 <div style={styles.infoTitle}>
                   <Info size={20} />

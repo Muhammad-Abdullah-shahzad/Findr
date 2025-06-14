@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect }  from 'react';
 import {
     MapPin,
     AlertCircle,
@@ -22,6 +22,7 @@ import {
     ArrowRight
 } from 'lucide-react';
 import ChatComponent from './ChatComponent'; // Import the ChatComponent
+import { GiHamburgerMenu } from "react-icons/gi"; // Import hamburger icon
 
 const UserDashboard = () => {
     const [lostItems, setLostItems] = useState([]);
@@ -37,6 +38,7 @@ const UserDashboard = () => {
     const [showChat, setShowChat] = useState(false); // New state for showing chat
     const [chatWithUser, setChatWithUser] = useState(null); // New state to store chat recipient's data
     const [conversations, setConversations] = useState([]); // New state for list of conversations
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State to control sidebar visibility
 
     const API_BASE_URL = 'https://findr-api-server.azurewebsites.net'; // Define API base URL here
 
@@ -49,15 +51,14 @@ const UserDashboard = () => {
             minHeight: '100vh',
             padding: '0',
             display: 'flex',
+            overflow: 'hidden', // Prevent container from scrolling, let children manage
         },
         dashboardWrapper: {
             display: 'flex',
             width: '100%',
             maxWidth: '100%',
             gap: '0',
-            '@media (max-width: 1024px)': {
-                flexDirection: 'column',
-            }
+            flexGrow: 1, // Allow it to take available space
         },
         sidebar: {
             width: '25%',
@@ -68,7 +69,7 @@ const UserDashboard = () => {
             borderRadius: '0rem 1rem 1rem 0rem',
             padding: '1.5rem',
             boxShadow: '0 8px 20px 0 rgba(0, 0, 0, 0.15)',
-            position: 'sticky',
+            position: 'sticky', // Keep as sticky for desktop
             top: '0',
             height: '100vh',
             overflowY: 'auto',
@@ -76,16 +77,6 @@ const UserDashboard = () => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-start',
-            '@media (max-width: 1024px)': {
-                width: '100%',
-                maxWidth: 'none',
-                minWidth: 'unset',
-                position: 'static',
-                height: 'auto',
-                borderRadius: '0.75rem',
-                marginBottom: '1rem',
-                padding: '1rem',
-            }
         },
         sidebarHeader: {
             fontSize: '1.8rem',
@@ -134,12 +125,10 @@ const UserDashboard = () => {
         },
         mainContent: {
             flexGrow: 1,
-            width: '75%',
+             width: '75%',
             padding: '2rem',
-            '@media (max-width: 1024px)': {
-                width: '100%',
-                padding: '1rem',
-            }
+              marginLeft:"20px"
+             // Increased padding for desktop
         },
         header: {
             textAlign: 'left',
@@ -301,7 +290,7 @@ const UserDashboard = () => {
             borderRadius: '0.5rem',
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             flexWrap: 'wrap',
             transition: 'all 0.2s ease-in-out',
             ':hover': {
@@ -436,49 +425,6 @@ const UserDashboard = () => {
                 transform: 'scale(1.03)', // Slight zoom on hover
             }
         },
-        '@media (max-width: 1024px)': {
-            sidebar: {
-                width: '100%',
-                maxWidth: 'none',
-                minWidth: 'unset',
-                position: 'static',
-                height: 'auto',
-                borderRadius: '0.75rem',
-                marginBottom: '1rem',
-                padding: '1rem',
-            },
-            mainContent: {
-                width: '100%',
-                padding: '1rem',
-            },
-            header: {
-                textAlign: 'center',
-            },
-            title: {
-                fontSize: '2rem',
-            },
-            subtitle: {
-                fontSize: '1rem',
-            },
-            statsGrid: {
-                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                gap: '1rem',
-            },
-            sectionTitle: {
-                fontSize: '1.5rem',
-            },
-            notificationHeader: {
-                fontSize: '1.4rem',
-            },
-            listItem: {
-                padding: '1rem',
-            },
-        },
-        '@media (max-width: 768px)': {
-            statsGrid: {
-                gridTemplateColumns: '1fr',
-            },
-        },
     };
 
     useEffect(() => {
@@ -502,7 +448,7 @@ const UserDashboard = () => {
 
         try {
             console.log(`fetchNotifications: Attempting to fetch notifications for user ${userId}`);
-            const response = await fetch(`http://localhost:5000/api/notifications?uID=${userId}`);
+            const response = await fetch(`https://findr-api-server.azurewebsites.net/api/notifications?uID=${userId}`);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
                 throw new Error(`HTTP error! Status: ${response.status} - ${errorData.message}`);
@@ -521,7 +467,7 @@ const UserDashboard = () => {
 
         try {
             console.log(`markNotificationAsRead: Marking notification ${notificationId} as read for user ${currentUserId}`);
-            const response = await fetch(`http://localhost:5000/api/notifications/${notificationId}?uID=${currentUserId}`, {
+            const response = await fetch(`https://findr-api-server.azurewebsites.net/api/notifications/${notificationId}?uID=${currentUserId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -550,7 +496,7 @@ const UserDashboard = () => {
         setMatchResults([]); // Clear previous results
         try {
             console.log(`fetchMatchResults: Fetching match results for lost item ${lostItemId}`);
-            const response = await fetch(`http://localhost:5000/api/matches/best-match?lostItemId=${lostItemId}`);
+            const response = await fetch(`https://findr-api-server.azurewebsites.net/api/matches/best-match?lostItemId=${lostItemId}`);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
                 throw new Error(`HTTP error! Status: ${response.status} - ${errorData.message}`);
@@ -575,7 +521,7 @@ const UserDashboard = () => {
         setLoading(true);
         try {
             console.log(`fetchDashboardDataAndNotifications: Fetching dashboard data for user ${currentUserId}`);
-            const dashboardResponse = await fetch(`http://localhost:5000/user/dashboard?userId=${currentUserId}`);
+            const dashboardResponse = await fetch(`https://findr-api-server.azurewebsites.net/user/dashboard?userId=${currentUserId}`);
             if (!dashboardResponse.ok) {
                 const errorData = await dashboardResponse.json().catch(() => ({ message: 'Unknown server error' }));
                 throw new Error(`HTTP error! Status: ${dashboardResponse.status} - ${errorData.message}`);
@@ -707,7 +653,17 @@ const UserDashboard = () => {
 
     return (
         <div style={styles.container}>
+            {/* Unified style block for global animations and all media queries */}
             <style jsx>{`
+                /* Global HTML and Body reset to remove default browser margins/paddings */
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    overflow: hidden; /* Prevent global scroll on html/body */
+                    height: 100%;
+                }
+
+                /* Global hover effects */
                 .hover-effect:hover {
                     transform: translateY(-5px) scale(1.01);
                     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
@@ -723,32 +679,317 @@ const UserDashboard = () => {
                     background-color: #e2e8f0 !important;
                     box-shadow: none !important;
                     transform: none !important;
-                    cursor: 'not-allowed' !important;
+                    cursor: not-allowed !important;
                 }
 
                 .mark-as-read-btn-hoverable:hover {
                     transform: translateY(-1px) scale(1.02) !important;
-                    boxShado: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
                     filter: brightness(1.1) !important;
                 }
 
                 .mark-as-read-btn-disabled-hover-override:hover {
                     background: #cbd5e1 !important;
-                    cursor: 'not-allowed' !important;
+                    cursor: not-allowed !important;
                     box-shadow: none !important;
                     transform: none !important;
+                }
+
+                /* Default sidebar styles for larger screens (and base for mobile) */
+                .sideBar {
+                    width: 25%; /* Default width for desktop */
+                    min-width: 250px;
+                    max-width: 300px;
+                    flex-shrink: 0;
+                    height: 100vh;
+                    position: sticky; /* Sticky for desktop */
+                    top: 0;
+                    bottom: 0;
+                    background: #1e293b;
+                    border-radius: 0rem 1rem 1rem 0rem;
+                    padding: 1.5rem;
+                    box-shadow: '0 8px 20px 0 rgba(0, 0, 0, 0.15)';
+                    color: '#fff';
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    overflow-y: auto;
+                    transition: left 0.3s ease-in-out; /* Smooth transition for mobile slide */
+                }
+
+                /* Default main content styles for larger screens */
+                .mainUserDashboard {
+                    flex-grow: 1;
+                    width: 75%; /* Adjust width for desktop */
+                    padding: 2rem; /* Adjusted padding for larger screens */
+                    position: relative; /* Default position */
+                    overflow-y: auto; /* Allow main content to scroll */
+                    height: 100vh; /* Ensure it takes full viewport height to scroll */
+                } 
+
+                /* Hamburger icon - hidden by default on larger screens */
+                .hamburger {
+                    display: none;
+                }
+
+                /* Media Query for mobile devices (max-width: 480px) */
+                @media (max-width: 480px) {
+                    .sideBar {
+                        position: fixed; /* Fixed position for mobile */
+                        z-index: 2;
+                        height: 100vh; /* Make sidebar take full viewport height */
+                        overflow-x: hidden; /* Prevent horizontal scroll on sidebar itself */
+                        top: 0; /* Should start from the very top */
+                        left: -290px; /* Initially hidden off-screen (sidebar width + some extra) */
+                        bottom: 0;
+                        width: 250px; /* Ensure a consistent width for slide */
+                        padding: 1.5rem 0.5rem; /* Reduced horizontal padding for mobile */
+                        box-sizing: border-box; /* Include padding in width calculation */
+                        overflow-y: auto; /* Allow sidebar content to scroll */
+                    }
+                    .sideBar .sidebarNavLink { /* Target specific styles on mobile */
+                        padding: 0.8rem 0.5rem; /* Adjust padding for links inside sidebar on mobile */
+                    }
+                    .sideBar .sidebarNav {
+                        align-items: flex-start; /* Ensure navigation items are left-aligned */
+                    }
+
+                    .show-sidebar { /* New class for showing the sidebar */
+                        left: 0px; /* Slide in to be visible */
+                    }
+
+                    .mainUserDashboard {
+                        position: relative;
+                        left: 0;
+                        top: 0;
+                        z-index: 1;
+                      
+                        align-items: center; /* Center main content children horizontally */
+                        width: 100%; /* Take full width on mobile */
+                        padding: 1rem; /* Adjusted padding for mobile screens */
+                        padding-top: 60px; /* Add padding-top to account for fixed hamburger menu height */
+                        box-sizing: border-box; /* Include padding in width calculation */
+                        overflow-y: auto; /* Allow main content to scroll */
+                        height: 100vh; /* Ensure it takes full viewport height to scroll */
+                    }
+                    .dashboardWrapper {
+                        flex-direction: column; /* Stack on mobile */
+                        width: 100%;
+                        height: 100vh; /* Occupy full viewport height */
+                        overflow: hidden; /* Hide overflow to prevent wrapper scroll */
+                    }
+                    .hamburger {
+                        display: initial; /* Display hamburger on mobile */
+                        font-size: 25px;
+                        position: fixed; /* Keep hamburger visible even when sidebar is open */
+                        top: 10px;
+                        left: 20px; /* Adjusted left to avoid collision with sidebar */
+                        z-index: 3; /* Ensure it's above sidebar */
+                        cursor: pointer;
+                        color: #1e293b;
+                        background: rgba(255, 255, 255, 0.8);
+                        padding: 8px;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                        transition: all 0.2s ease;
+                    }
+                    .hamburger:hover {
+                         transform: scale(1.05);
+                    }
+
+                    /* Specific adjustments for cards and grids on small screens */
+                    .statsGrid {
+                         grid-template-columns: 1fr; /* Stack cards vertically on smallest screens */
+                         gap: 1rem; /* Reduced gap */
+                         width: calc(100% - 2rem); /* Take full width minus padding */
+                         max-width: 400px; /* Optional: Limit max width for better appearance */
+                         margin: 0 auto; /* Center the grid */
+                    }
+                    .list {
+                         grid-template-columns: 1fr; /* Stack list items vertically */
+                         gap: 1rem; /* Reduced gap */
+                         width: 100%; /* Ensure list takes full width */
+                         max-width: 400px; /* Optional: Limit max width for better appearance */
+                    }
+                    .card {
+                        padding: 0.8rem; /* Reduced padding for cards on mobile */
+                        border-radius: 0.5rem; /* Slightly smaller border radius */
+                        width: calc(100% - 2rem); /* Ensure cards take full width minus padding */
+                        box-sizing: border-box; /* Include padding in width */
+                        margin: 0 auto; /* Center the card horizontally */
+                        max-width: 400px; /* Optional: limit max width for better centering on larger phones */
+                    }
+                    .sectionTitle {
+                        font-size: 1.5rem; /* Smaller title font size */
+                        margin-top: 1.5rem;
+                        margin-bottom: 1rem;
+                        text-align: center; /* Center section titles */
+                        justify-content: center; /* Center icon and text for flex items */
+                        width: 100%; /* Ensure it takes full width for centering */
+                    }
+                    .title {
+                        font-size: 2rem; /* Adjusted main title size */
+                        text-align: center; /* Center main title */
+                        width: 100%; /* Ensure it takes full width for centering */
+                    }
+                    .subtitle {
+                        font-size: 1rem; /* Adjusted subtitle size */
+                        text-align: center; /* Center subtitle */
+                        width: 100%; /* Ensure it takes full width for centering */
+                    }
+                    .header {
+                        text-align: center; /* Center header content */
+                        width: 100%; /* Ensure header takes full width */
+                        margin-bottom: 1.5rem; /* Adjust margin */
+                    }
+                    .notificationHeader {
+                        font-size: 1.4rem; /* Adjusted notification header size */
+                        text-align: center; /* Center notification header */
+                        justify-content: center; /* Center icon and text for flex items */
+                        width: 100%; /* Ensure it takes full width for centering */
+                    }
+                    .notificationItem {
+                        flex-direction: column; /* Stack notification content and button */
+                        align-items: center; /* Center items within notification item */
+                        text-align: center; /* Center text within notification item */
+                    }
+                    .notificationItem > div { /* Target the div wrapping text specifically */
+                        text-align: center; /* Center text within the notification item */
+                        width: 100%; /* Ensure div takes full width */
+                        margin-bottom: 0.5rem; /* Space between text and button */
+                    }
+                    .markAsReadButton {
+                        margin-left: 0 !important; /* Override explicit margin-left */
+                        margin: 0.5rem auto 0 auto !important; /* Center the button horizontally with top margin */
+                        width: calc(100% - 2rem) !important; /* Make button full width minus padding */
+                        max-width: 200px; /* Limit button width for better appearance */
+                    }
+                    .foundItemImage {
+                        max-width: 100%; /* Ensure image scales down */
+                    }
+                     .notificationBox { /* Specific centering for notification box on mobile */
+                        width: calc(100% - 2rem); /* Ensure it takes full width minus padding */
+                        max-width: 400px; /* Limit max width for better appearance */
+                        margin: 0 auto; /* Center the box horizontally */
+                        box-sizing: border-box; /* Include padding in width calculation */
+                    }
+                }
+
+                /* Media Query for tablet and larger screens (min-width: 768px and max-width: 1024px) */
+                @media screen and (min-width: 768px) and (max-width: 1024px) {
+                    .sideBar {
+                        width: 200px; /* Slightly narrower sidebar for tablets */
+                        min-width: unset;
+                        max-width: unset;
+                        padding: 1rem; /* Adjusted padding */
+                        position: sticky;
+                        left: 0; /* Ensure it's not hidden by mistake */
+                    }
+                     .sideBar .sidebarNavLink {
+                        padding: 0.8rem 0.5rem; /* Adjust padding for links inside sidebar on tablets */
+                    }
+                    .mainUserDashboard {
+                        width: calc(100% - 200px); /* Adjust width */
+                        padding: 1.5rem; /* Adjusted padding */
+                        align-items: flex-start; /* Reset alignment for larger screens */
+                    }
+                    .statsGrid, .list, .card, .header, .sectionTitle, .notificationHeader {
+                        width: auto; /* Reset width to default */
+                        margin-left: 0; /* Reset margins */
+                        margin-right: 0;
+                        max-width: none; /* Reset max-width */
+                        text-align: left; /* Reset text alignment */
+                        justify-content: flex-start; /* Reset flex item alignment */
+                    }
+                    .hamburger {
+                        display: none; /* Hide hamburger */
+                    }
+                     .dashboardWrapper {
+                        flex-direction: row; /* Side-by-side layout */
+                        height: 100vh; /* Ensure it takes full viewport height */
+                        overflow: hidden; /* Hide overflow to prevent wrapper scroll */
+                    }
+                    .notificationItem {
+                        flex-direction: row; /* Reset to row for larger screens */
+                        align-items: flex-start;
+                        text-align: left; /* Reset text alignment */
+                    }
+                    .notificationItem > div { /* Target the div wrapping text specifically */
+                        text-align: left; /* Ensure text is left-aligned */
+                        width: auto; /* Reset width */
+                    }
+                    .markAsReadButton {
+                        margin-left: 10px !important; /* Reset margin */
+                        margin: 0 0 0 10px !important; /* Ensure default margin for desktop */
+                        width: auto !important; /* Reset width */
+                        max-width: none !important; /* Reset max-width */
+                    }
+                }
+
+                /* Media Query for larger screens (min-width: 1025px) */
+                @media screen and (min-width: 1025px) {
+                    .sideBar {
+                        position: sticky;
+                        top: 0;
+                        bottom: 0;
+                        left: 0;
+                        width: 25%;
+                        min-width: 250px;
+                        max-width: 300px;
+                        padding: 1.5rem;
+                    }
+                    .sideBar .sidebarNavLink {
+                        padding: 0.8rem 1.2rem;
+                     }
+                    .mainUserDashboard {
+                         width: 100%;
+                        padding: 2rem; /* Revert to original padding for large screens */
+                        align-items: flex-start; /* Reset alignment for larger screens */
+                    }
+                    .statsGrid, .list, .card, .header, .sectionTitle, .notificationHeader {
+                        width: auto; /* Reset width to default */
+                        margin-left: 0; /* Reset margins */
+                        margin-right: 0;
+                        max-width: none; /* Reset max-width */
+                        text-align: left; /* Reset text alignment */
+                        justify-content: flex-start; /* Reset flex item alignment */
+                    }
+                    .hamburger {
+                        display: none;
+                    }
+                     .dashboardWrapper {
+                        flex-direction: row;
+                        height: 100vh; /* Ensure it takes full viewport height */
+                        overflow: hidden; /* Hide overflow to prevent wrapper scroll */
+                    }
+                    .notificationItem {
+                        flex-direction: row; /* Reset to row for larger screens */
+                        align-items: flex-start;
+                        text-align: left; /* Reset text alignment */
+                    }
+                    .notificationItem > div { /* Target the div wrapping text specifically */
+                        text-align: left; /* Ensure text is left-aligned */
+                        width: auto; /* Reset width */
+                    }
+                    .markAsReadButton {
+                        margin-left: 10px !important; /* Reset margin */
+                        margin: 0 0 0 10px !important; /* Ensure default margin for desktop */
+                        width: auto !important; /* Reset width */
+                        max-width: none !important; /* Reset max-width */
+                    }
                 }
             `}</style>
 
             <div style={styles.dashboardWrapper}>
                 {/* Sidebar */}
-                <aside style={styles.sidebar}>
+                {/* Conditionally apply 'show-sidebar' class based on isSidebarOpen state */}
+                <aside style={styles.sidebar} className={`sideBar ${isSidebarOpen ? 'show-sidebar' : ''}`}>
                     <h2 style={styles.sidebarHeader}>Findr Dashboard</h2>
                     <ul style={styles.sidebarNav}>
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'dashboard' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('dashboard')}
+                                onClick={() => { setActiveSection('dashboard'); setIsSidebarOpen(false); }} // Close sidebar on nav click
                                 className="sidebar-link-hoverable"
                             >
                                 <LayoutDashboard size={20} style={styles.sidebarNavIcon} />
@@ -758,7 +999,7 @@ const UserDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'myLostItems' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('myLostItems')}
+                                onClick={() => { setActiveSection('myLostItems'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <Search size={20} style={styles.sidebarNavIcon} />
@@ -768,7 +1009,7 @@ const UserDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'myFoundItems' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('myFoundItems')}
+                                onClick={() => { setActiveSection('myFoundItems'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <Box size={20} style={styles.sidebarNavIcon} />
@@ -778,7 +1019,7 @@ const UserDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'claimRequests' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('claimRequests')}
+                                onClick={() => { setActiveSection('claimRequests'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <MessageSquareText size={20} style={styles.sidebarNavIcon} />
@@ -788,7 +1029,7 @@ const UserDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'notifications' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('notifications')}
+                                onClick={() => { setActiveSection('notifications'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <BellRing size={20} style={styles.sidebarNavIcon} />
@@ -798,7 +1039,7 @@ const UserDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'matchResults' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('matchResults')}
+                                onClick={() => { setActiveSection('matchResults'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <GitCompare size={20} style={styles.sidebarNavIcon} />
@@ -810,7 +1051,7 @@ const UserDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'profile' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('profile')}
+                                onClick={() => { setActiveSection('profile'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <User size={20} style={styles.sidebarNavIcon} />
@@ -820,7 +1061,7 @@ const UserDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'helpSupport' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => setActiveSection('helpSupport')}
+                                onClick={() => { setActiveSection('helpSupport'); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <LifeBuoy size={20} style={styles.sidebarNavIcon} />
@@ -830,7 +1071,7 @@ const UserDashboard = () => {
                         <li>
                             <div
                                 style={{ ...styles.sidebarNavLink, ...(activeSection === 'chat' ? styles.sidebarNavLinkActive : {}) }}
-                                onClick={() => { setActiveSection('chat'); setShowChat(false); setChatWithUser(null); }}
+                                onClick={() => { setActiveSection('chat'); setShowChat(false); setChatWithUser(null); setIsSidebarOpen(false); }}
                                 className="sidebar-link-hoverable"
                             >
                                 <MessageSquare size={20} style={styles.sidebarNavIcon} />
@@ -841,7 +1082,16 @@ const UserDashboard = () => {
                 </aside>
 
                 {/* Main Dashboard Content */}
-                <main style={styles.mainContent}>
+                <main style={styles.mainContent} className="mainUserDashboard">
+                    {/* Hamburger menu for mobile */}
+                    <div className="hamburger"
+                        onClick={() => {
+                            setIsSidebarOpen(!isSidebarOpen); // Toggle sidebar visibility
+                        }}
+                    >
+                        <GiHamburgerMenu />
+                    </div>
+
                     {activeSection === 'chat' ? (
                         showChat && chatWithUser ? (
                             <ChatComponent
@@ -944,7 +1194,7 @@ const UserDashboard = () => {
                                                             <strong>New:</strong> {note.message}
                                                             {note.senderFirstName && note.senderLastName && (
                                                                 <span style={{ fontSize: '0.9em', marginLeft: '5px', fontStyle: 'italic', color: '#94a3b8' }}>
-                                                                    (from {note.senderFirstName} {note.senderLastName})
+                                                                    (from {note.senderFirstName} {note.lastName})
                                                                 </span>
                                                             )}
                                                             <div style={styles.notificationTimestamp}>
@@ -960,7 +1210,7 @@ const UserDashboard = () => {
                                                         </button>
                                                     </li>
                                                 ))}
-                                                {readNotifications.slice(0, 5).map(note => (
+                                                {readNotifications.map(note => (
                                                     <li
                                                         key={note.id}
                                                         style={{ ...styles.notificationItem, ...styles.readNotificationItem }}
@@ -1020,7 +1270,7 @@ const UserDashboard = () => {
                                                     <span style={styles.infoText}>Posted on: {new Date(item.createdAt).toLocaleDateString()}</span>
                                                     {item.location && <span style={styles.infoText}>Location: {item.location}</span>}
                                                     {item.contactInfo && <span style={styles.infoText}>Contact: {item.contactInfo}</span>}
-                                                    {item.status && <span style={styles.infoText}>Status: <span style={getStatusStyle(item.status)}>{item.status.toUpperCase()}</span></span>}
+                                                    {item.status && <span style={getStatusStyle(item.status)}>{item.status.toUpperCase()}</span>}
                                                     <button
                                                         style={styles.findMatchButton}
                                                         onClick={() => fetchMatchResults(item.id)}
@@ -1056,7 +1306,7 @@ const UserDashboard = () => {
                                                     <span style={styles.infoText}>Posted on: {new Date(item.createdAt).toLocaleDateString()}</span>
                                                     {item.location && <span style={styles.infoText}>Location: {item.location}</span>}
                                                     {item.contactInfo && <span style={styles.infoText}>Contact: {item.contactInfo}</span>}
-                                                    {item.status && <span style={styles.infoText}>Status: <span style={getStatusStyle(item.status)}>{item.status.toUpperCase()}</span></span>}
+                                                    {item.status && <span style={getStatusStyle(item.status)}>{item.status.toUpperCase()}</span>}
                                                 </li>
                                             ))}
                                         </ul>
@@ -1105,13 +1355,13 @@ const UserDashboard = () => {
                             {activeSection === 'notifications' && (
                                 <div style={styles.notificationBox} className="hover-effect">
                                     <h3 style={styles.notificationHeader}>
-                                        <BellRing size={24} /> All Notifications
+                                        <BellRing size={24} /> Recent Notifications
                                     </h3>
                                     {notifications.length === 0 ? (
                                         <p style={styles.noDataMessage}>No notifications yet.</p>
                                     ) : (
                                         <ul style={styles.list}>
-                                            {unreadNotifications.map(note => (
+                                            {unreadNotifications.slice(0, 5).map(note => (
                                                 <li
                                                     key={note.id}
                                                     style={styles.notificationItem}
@@ -1121,48 +1371,48 @@ const UserDashboard = () => {
                                                         <strong>New:</strong> {note.message}
                                                         {note.senderFirstName && note.senderLastName && (
                                                             <span style={{ fontSize: '0.9em', marginLeft: '5px', fontStyle: 'italic', color: '#94a3b8' }}>
-                                                                (from {note.senderFirstName} {note.senderLastName})
-                                                            </span>
-                                                        )}
-                                                        <div style={styles.notificationTimestamp}>
-                                                            {new Date(note.createdAt).toLocaleString()}
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        style={styles.markAsReadButton}
-                                                        onClick={() => markNotificationAsRead(note.id)}
-                                                        className="mark-as-read-btn-hoverable"
-                                                    >
-                                                        Mark as Read
-                                                    </button>
-                                                </li>
-                                            ))}
-                                            {readNotifications.map(note => (
-                                                <li
-                                                    key={note.id}
-                                                    style={{ ...styles.notificationItem, ...styles.readNotificationItem }}
-                                                    className="read-notification-item-hover-override"
-                                                >
-                                                    <div>
-                                                        {note.message}
-                                                        {note.senderFirstName && note.senderLastName && (
-                                                            <span style={{ fontSize: '0.9em', marginLeft: '5px', fontStyle: 'italic', color: '#94a3b8' }}>
                                                                 (from {note.senderFirstName} {note.lastName})
                                                             </span>
                                                         )}
                                                         <div style={styles.notificationTimestamp}>
-                                                            {new Date(note.createdAt).toLocaleString()} (Read)
+                                                            {new Date(note.createdAt).toLocaleString()}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <button
-                                                        style={{ ...styles.markAsReadButton, ...styles.markAsReadButtonRead }}
-                                                        disabled
-                                                        className="mark-as-read-btn-disabled-hover-override"
+                                                        <button
+                                                            style={styles.markAsReadButton}
+                                                            onClick={() => markNotificationAsRead(note.id)}
+                                                            className="mark-as-read-btn-hoverable"
+                                                        >
+                                                            Mark as Read
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                                {readNotifications.map(note => (
+                                                    <li
+                                                        key={note.id}
+                                                        style={{ ...styles.notificationItem, ...styles.readNotificationItem }}
+                                                        className="read-notification-item-hover-override"
                                                     >
-                                                        Read
-                                                    </button>
-                                                </li>
-                                            ))}
+                                                        <div>
+                                                            {note.message}
+                                                            {note.senderFirstName && note.senderLastName && (
+                                                                <span style={{ fontSize: '0.9em', marginLeft: '5px', fontStyle: 'italic', color: '#94a3b8' }}>
+                                                                    (from {note.senderFirstName} {note.lastName})
+                                                                </span>
+                                                            )}
+                                                            <div style={styles.notificationTimestamp}>
+                                                                {new Date(note.createdAt).toLocaleString()} (Read)
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            style={{ ...styles.markAsReadButton, ...styles.markAsReadButtonRead }}
+                                                            disabled
+                                                            className="mark-as-read-btn-disabled-hover-override"
+                                                        >
+                                                            Read
+                                                        </button>
+                                                    </li>
+                                                ))}
                                         </ul>
                                     )}
                                 </div>
@@ -1194,7 +1444,7 @@ const UserDashboard = () => {
                                                     <span style={styles.infoText}>Location: {match.foundItem.location}</span>
                                                     <span style={styles.infoText}>Contact Info: {match.foundItem.contactInfo}</span>
                                                     <span style={styles.infoText}>Found On: {new Date(match.foundItem.createdAt).toLocaleDateString()}</span>
-                                                    <span style={styles.matchScore}>Match Score: {(match.score * 100).toFixed(2)}%</span>
+                                                    <span style={styles.matchScore}>Match Score: ${(match.score * 100).toFixed(2)}%</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -1227,7 +1477,6 @@ const UserDashboard = () => {
                                     </p>
                                 </section>
                             )}
-
                         </>
                     )}
                 </main>

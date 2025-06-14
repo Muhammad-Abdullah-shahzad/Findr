@@ -1,4 +1,0 @@
-{
-    "appService.defaultWebAppToDeploy": "/subscriptions/30e48e1d-6b41-445a-b159-406a21046d80/resourceGroups/appsvc_linux_centralus/providers/Microsoft.Web/sites/findr-API-Server",
-    "appService.deploySubpath": "."
-}

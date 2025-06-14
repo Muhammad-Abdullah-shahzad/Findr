@@ -1,0 +1,53 @@
+@media (max-width: 480px) {
+  .sideBar {
+    position: fixed;
+    z-index: 2;
+    height: 100vh;
+    overflow: hidden;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    margin-left:-290px;
+    transition:all
+  }
+  .show{
+    margin-left: 0px;
+    transition: all;
+  }
+
+  .mainAdminDashboard {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  }
+  .dashboardWrapper {
+    position: absolute;
+    z-index: 0;
+  }
+  .hamburger{
+    display: initial;
+    font-size: 25px;
+    position: absolute;
+    top: 10px;
+    left: 29px;
+    z-index: 1;
+    margin: bottom 10px; 
+   }
+}
+
+@media screen and (min-width: 768px) and (max-width: 1550px) {
+ .sideBar{
+  position: sticky;
+  top: 0;
+  bottom: 0;
+ }
+ .hamburger{
+  display: none;
+ }
+}
