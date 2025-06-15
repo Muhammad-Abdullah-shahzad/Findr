@@ -12,12 +12,12 @@ const stringSimilarity = require('string-similarity');
 const geolib = require('geolib');
 
 cloudinary.config({
-  cloud_name: 'abdullahcloud', // Replace with your Cloudinary cloud name
-  api_key: '259835984394572', // Replace with your Cloudinary API key
-  api_secret: 'qiMO9VfDsUeosR4Njt8ulbg1FJY' // Replace with your Cloudinary API secret
+  cloud_name: process.env.cloudName, // Replace with your Cloudinary cloud name
+  api_key: process.env.Api_key, // Replace with your Cloudinary API key
+  api_secret: process.env.Api_Secret// Replace with your Cloudinary API secret
 });
 
-const SECRET = 'your_jwt_secret'; // Change this in production
+const SECRET = process.env.Secret; // Change this in production
 async function getLocationScore(loc1, loc2) {
   // Regex for Latitude: matches "Lat: " followed by a number
   const latRegex = /Lat:\s*([\d.-]+)/;
