@@ -1,70 +1,155 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# 🔍 Findr – Lost & Found Web Application
 
-## Available Scripts
+**Findr** is a full-stack Lost & Found platform that allows users to report, search, and recover lost items. It features a **React.js** frontend and a **Node.js** backend (using custom MVC architecture), with **JWT authentication** and **bcrypt** for secure password handling. The backend and **SQL Server** database are deployed on **Microsoft Azure**.
 
-In the project directory, you can run:
+🔗 **Live Site:** [https://findr-web.netlify.app](https://findr-web.netlify.app)
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 📸 Preview
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+> *(Screenshots coming soon)*
 
-### `npm test`
+---
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## ✨ Features
 
-### `npm run build`
+| Category              | Description                                                                 |
+|-----------------------|-----------------------------------------------------------------------------|
+| 📝 Item Reporting      | Post lost/found items with full details and images                         |
+| 🔍 Smart Search        | Search and filter by category, location, or keywords                        |
+| 🔐 Authentication      | JWT-based login with bcrypt-hashed passwords                               |
+| 👤 User Dashboard      | Manage posted and claimed items                                             |
+| 📥 Claim Request       | Users can send and manage claims to recover items                          |
+| 🧱 MVC Architecture     | Organized backend folder structure for scalability                         |
+| 📱 Responsive Design   | Optimized for mobile, tablet, and desktop devices                          |
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 🛠️ Tech Stack
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+| Layer          | Technologies Used                                           |
+|----------------|-------------------------------------------------------------|
+| Frontend       | React.js, HTML5, CSS3                                       |
+| Backend        | Node.js (Custom MVC Architecture)                           |
+| Authentication | JWT (JSON Web Token), bcrypt                                |
+| Database       | SQL Server                                                  |
+| Deployment     | Netlify (Frontend), Microsoft Azure (Backend & Database)    |
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 📂 Folder Structure
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+findr/
+├── client/                   # React frontend
+│   ├── public/
+│   └── src/
+│       ├── components/
+│       ├── pages/
+│       ├── App.js
+│       └── index.js
+│
+├── server/                   # Node.js backend
+│   ├── controllers/
+│   ├── models/
+│   ├── routes/
+│   ├── views/                # Optional (if using SSR)
+│   ├── config/               # DB connection & env config
+│   └── app.js
+│
+├── database/                 # SQL scripts or backups
+├── .env                      # Environment variables
+└── README.md
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+🚀 Getting Started
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+🧾 Prerequisites
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Node.js and npm installed
 
-### Code Splitting
+SQL Server installed or available
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Basic knowledge of React & Node.js (MVC)
 
-### Analyzing the Bundle Size
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+🔧 Installation
 
-### Making a Progressive Web App
+1. Clone the repository:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+git clone https://github.com/yourusername/findr.git
+cd findr
 
-### Advanced Configuration
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+2. Install frontend dependencies:
 
-### Deployment
+cd client
+npm install
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
 
-### `npm run build` fails to minify
+3. Install backend dependencies:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+cd ../server
+npm install
+
+
+4. Setup environment variables:
+
+Create a .env file inside server/ and add:
+
+PORT=5000
+DB_HOST=your_sql_server_host
+DB_NAME=your_db_name
+DB_USER=your_db_user
+DB_PASS=your_db_password
+JWT_SECRET=your_secret_key
+
+
+5. Run the app locally:
+
+Start backend:
+
+cd server
+node app.js
+
+Start frontend (in separate terminal):
+
+cd client
+npm start
+
+
+
+
+
+---
+
+🌐 Deployment
+
+Component	Platform	URL
+
+Frontend	Netlify	https://findr-web.netlify.app
+Backend	Microsoft Azure	Hosted privately
+Database	Microsoft Azure	SQL Server on Azure
+
+
+
+---
+
+📬 Contact
+
+Muhammad Abdullah
+📧 Email: shahzadabdullah814@gmail.com
+
+
+---
+
+📃 License
+
+This project is open-source and free to use for educational or personal use.
+
+---
+
